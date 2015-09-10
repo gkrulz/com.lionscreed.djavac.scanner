@@ -17,6 +17,13 @@ import java.util.regex.Pattern;
  * Created by Padmaka on 9/8/2015.
  */
 public class Scanner {
+    abstract interface sdfsd{
+
+    }
+
+    public abstract static class dfg{
+
+    }
     public Collection read(){
         File file = new File(System.getProperty("user.dir")+"\\src\\main\\resources");
         System.out.println(System.getProperty("user.dir")+"\\src\\main\\resources");
@@ -32,9 +39,10 @@ public class Scanner {
             InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(f));
 
             String fileString = FileUtils.readFileToString(f, inputStreamReader.getEncoding());
-//            Pattern pattern = Pattern.compile("(public|private|abstract)\\s+(class|interface)\\s+\\w+((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+( ,\\w+)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+( ,\\w+)*))?\\s*\\{");
-//            Pattern pattern = Pattern.compile("((public|private|abstract)\\s+(class|interface)\\s+\\w+((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+( ,\\w+)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+( ,\\w+)*))?\\s*\\{)|((class|interface)\\s+\\w+((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+( ,\\w+)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+( ,\\w+)*))?\\s*\\{)");
-            Pattern pattern = Pattern.compile("((public|protected|private)?\\s*class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+)*))?\\s*)?\\{([^{}]|(\\{([^{}])*\\}))*\\}");
+
+            Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
+                    "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
+
             Matcher matcher = pattern.matcher(fileString);
             while(matcher.find()){
                 try {
