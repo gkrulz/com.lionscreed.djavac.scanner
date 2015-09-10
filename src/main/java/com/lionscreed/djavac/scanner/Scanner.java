@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,24 +18,16 @@ import java.util.regex.Pattern;
  * Created by Padmaka on 9/8/2015.
  */
 public class Scanner {
-    abstract interface sdfsd{
 
-    }
-
-    public abstract static class dfg{
-
-    }
     public Collection read(){
         File file = new File(System.getProperty("user.dir")+"\\src\\main\\resources");
-        System.out.println(System.getProperty("user.dir")+"\\src\\main\\resources");
-        System.out.println(file.exists() ? "yes" : "NO");
         Collection files = FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
         return files;
     }
 
     public void findDependencies(ArrayList<File> files) throws IOException {
         for(File f : files){
-            System.out.println("------------------------------------------------------");
+
             System.out.println(f.getName());
             InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(f));
 
@@ -44,14 +37,49 @@ public class Scanner {
                     "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
 
             Matcher matcher = pattern.matcher(fileString);
-            while(matcher.find()){
+            matcher.find();
                 try {
                     System.out.println(matcher.group());
+//                    System.out.println(matcher.end());
+//                    System.out.println(fileString.charAt(matcher.end() - 1));
+                    int endOfClass = this.getEndOfClass(fileString, matcher.end() - 1);
+                    String str = fileString.substring(matcher.end(), endOfClass);
+                    System.out.println("------------------------------------------------------");
+                    System.out.println(str);
+                    System.out.println("------------------------------------------------------");
                 }catch (IllegalStateException e){
                     System.err.println(f.getName() + " - No match found");
                 }
-            }
-            System.out.println("------------------------------------------------------");
+
+
         }
+    }
+
+    public int getEndOfClass(String fileString, int startOfClass){
+
+        int endOfClass = 0;
+        Stack<Character> stack = new Stack<Character>();
+
+        for (int i = startOfClass; i < fileString.length(); i++) {
+
+            char current = fileString.charAt(i);
+            if (current == '{') {
+                stack.push(current);
+            }
+            if (current == '}') {
+                char last = stack.peek();
+                if (current == '}' && last == '{') {
+                    stack.pop();
+                }
+                else{
+                    endOfClass = -1;
+                }
+
+                if (stack.isEmpty()){
+                    endOfClass = i;
+                }
+            }
+        }
+        return endOfClass;
     }
 }

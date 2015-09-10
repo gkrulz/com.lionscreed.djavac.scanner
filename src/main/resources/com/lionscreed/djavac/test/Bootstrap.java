@@ -24,6 +24,10 @@ public class Bootstrap implements Stopable{
     }
 
     public void doSomething(){
+        System.out.println("sdfsdf");
+    }
+
+    public void test(){
 
     }
 
