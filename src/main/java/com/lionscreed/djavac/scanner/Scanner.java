@@ -1,5 +1,8 @@
 package com.lionscreed.djavac.scanner;
 
+import com.google.gson.JsonObject;
+import com.lionscreed.djavac.scanner.model.JavaClass;
+import netscape.javascript.JSObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -18,9 +21,14 @@ import java.util.regex.Pattern;
  * Created by Padmaka on 9/8/2015.
  */
 public class Scanner {
+    private ArrayList<JavaClass> javaClasses;
+
+    public Scanner(){
+        javaClasses = new ArrayList<JavaClass>();
+    }
 
     public Collection read(){
-        File file = new File(System.getProperty("user.dir")+"\\src\\main\\resources");
+        File file = new File(System.getProperty("user.dir")+"/src/main/resources");
         Collection files = FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
         return files;
     }
@@ -33,17 +41,18 @@ public class Scanner {
 
             String fileString = FileUtils.readFileToString(f, inputStreamReader.getEncoding());
 
-            Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
-                    "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
+            JsonObject classJson = this.getStartOfClass(fileString);
 
-            Matcher matcher = pattern.matcher(fileString);
-            matcher.find();
                 try {
-                    System.out.println(matcher.group());
+                    System.out.println(classJson.get("classDeclaration").getAsString());
 //                    System.out.println(matcher.end());
 //                    System.out.println(fileString.charAt(matcher.end() - 1));
-                    int endOfClass = this.getEndOfClass(fileString, matcher.end() - 1);
-                    String str = fileString.substring(matcher.end(), endOfClass);
+                    int endOfClass = this.getEndOfClass(fileString, classJson.get("end").getAsInt() - 1);
+                    String str = fileString.substring(classJson.get("end").getAsInt(), endOfClass);
+                    JavaClass javaClass = new JavaClass();
+                    javaClass.setDeclaration(classJson.get("classDeclaration").getAsString());
+                    javaClass.setBody(str);
+                    javaClasses.add(javaClass);
                     System.out.println("------------------------------------------------------");
                     System.out.println(str);
                     System.out.println("------------------------------------------------------");
@@ -53,6 +62,20 @@ public class Scanner {
 
 
         }
+    }
+
+    public JsonObject getStartOfClass(String fileString){
+
+        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
+                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
+
+        Matcher matcher = pattern.matcher(fileString);
+        matcher.find();
+
+        JsonObject classJson = new JsonObject();
+        classJson.addProperty("end", matcher.end());
+        classJson.addProperty("classDeclaration", matcher.group());
+        return classJson;
     }
 
     public int getEndOfClass(String fileString, int startOfClass){
