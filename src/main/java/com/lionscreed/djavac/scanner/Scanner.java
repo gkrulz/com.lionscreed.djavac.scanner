@@ -78,7 +78,7 @@ public class Scanner {
         return classJson;
     }
 
-    public int getEndOfClass(String fileString, int startOfClass){
+    public ArrayList<JsonObject> getEndOfClass(String fileString, int startOfClass){
 
         int endOfClass = 0;
         Stack<Character> stack = new Stack<Character>();
@@ -100,6 +100,12 @@ public class Scanner {
 
                 if (stack.isEmpty()){
                     endOfClass = i;
+                    if (i < fileString.length()){
+                        //TODO find the next class
+                        String restOfTheString = fileString.substring(i, fileString.length())
+                        JsonObject nextClass = this.getStartOfClass(restOfTheString);
+                    }
+                    break;
                 }
             }
         }

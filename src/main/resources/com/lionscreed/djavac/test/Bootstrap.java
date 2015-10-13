@@ -37,5 +37,5 @@ public class Bootstrap implements Stopable{
 }
 
 class OuterClass{
-
+    private int num = 1;
 }
