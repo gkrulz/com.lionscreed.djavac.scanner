@@ -1,1 +1,1 @@
-# com.lionscreed.djavac.scanner
+# com.piranha.scanner
