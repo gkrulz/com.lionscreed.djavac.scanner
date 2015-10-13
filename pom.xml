@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.lionscreed.djavac</groupId>
-    <artifactId>com.lionscreed.djavac.scanner</artifactId>
+    <groupId>com.piranha</groupId>
+    <artifactId>com.piranha.scanner</artifactId>
     <version>1.0.0</version>
 
     <dependencies>
@@ -18,6 +18,11 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
         </dependency>
     </dependencies>
 

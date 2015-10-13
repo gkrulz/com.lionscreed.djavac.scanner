@@ -1,6 +1,6 @@
-package com.lionscreed.djavac.scanner.test;
+package com.piranha.scanner.test;
 
-import com.lionscreed.djavac.scanner.Scanner;
+import com.piranha.scanner.Scanner;
 
 import java.io.*;
 import java.util.ArrayList;

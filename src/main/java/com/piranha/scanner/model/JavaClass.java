@@ -1,4 +1,4 @@
-package com.lionscreed.djavac.scanner.model;
+package com.piranha.scanner.model;
 
 /**
  * Created by hub on 9/23/15.
