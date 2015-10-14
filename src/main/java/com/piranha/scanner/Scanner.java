@@ -52,7 +52,7 @@ public class Scanner {
                     log.debug(classJson.get("classDeclaration").getAsString());
 //                    log.debug(matcher.end());
 //                    log.debug(fileString.charAt(matcher.end() - 1));
-                    this.findClasses(f.getName(), classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1);
+                    this.findOutterClasses(f.getName(), classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1);
 //                    String str = fileString.substring(classJson.get("end").getAsInt(), endOfClass);
 //                    JavaClass javaClass = new JavaClass();
 //                    javaClass.setDeclaration(classJson.get("classDeclaration").getAsString());
@@ -86,7 +86,7 @@ public class Scanner {
 
     private ArrayList<JsonObject> classes = new ArrayList<JsonObject>();
 
-    public void findClasses(String fileName, String className, String fileString, int startOfClass){
+    public void findOutterClasses(String fileName, String className, String fileString, int startOfClass){
 
         int endOfClass = 0;
         Stack<Character> stack = new Stack<Character>();
@@ -118,7 +118,7 @@ public class Scanner {
                     if (i < fileString.length()){
                         String restOfTheString = fileString.substring(i, fileString.length());
                         JsonObject nextClass = this.getClass(restOfTheString);
-                        this.findClasses(fileName, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1);
+                        this.findOutterClasses(fileName, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1);
                     }
                     break;
                 }
