@@ -31,7 +31,8 @@ public class Scanner {
     }
 
     public Collection read(){
-        File file = new File(System.getProperty("user.dir")+"/src/main/resources/src");
+        log.debug(System.getProperty("user.dir"));
+        File file = new File(System.getProperty("user.dir")+"/src/main/resources");
         Collection files = FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
         return files;
     }
@@ -49,10 +50,11 @@ public class Scanner {
             JsonObject classJson = this.getClass(fileString);
 
                 try {
-                    log.debug(classJson.get("classDeclaration").getAsString());
+                    if (classJson != null) {
+//                        log.debug(classJson.get("classDeclaration").getAsString());
 //                    log.debug(matcher.end());
 //                    log.debug(fileString.charAt(matcher.end() - 1));
-                    this.findOutterClasses(f.getName(), classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1);
+                        this.findOutterClasses(f.getName(), classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1);
 //                    String str = fileString.substring(classJson.get("end").getAsInt(), endOfClass);
 //                    JavaClass javaClass = new JavaClass();
 //                    javaClass.setDeclaration(classJson.get("classDeclaration").getAsString());
@@ -61,8 +63,9 @@ public class Scanner {
 //                    log.debug("------------------------------------------------------");
 //                    log.debug(str);
 //                    log.debug("------------------------------------------------------");
+                    }
                 }catch (IllegalStateException e){
-                    System.err.println(f.getName() + " - No match found");
+                    log.error(f.getName() + " - No match found");
                 }
 
 
@@ -76,11 +79,18 @@ public class Scanner {
                 "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
 
         Matcher matcher = pattern.matcher(fileString);
-        matcher.find();
 
-        JsonObject classJson = new JsonObject();
-        classJson.addProperty("end", matcher.end());
-        classJson.addProperty("classDeclaration", matcher.group());
+        JsonObject classJson = null;
+        try {
+            matcher.find();
+            classJson = new JsonObject();
+            classJson.addProperty("end", matcher.end());
+            classJson.addProperty("classDeclaration", matcher.group());
+        } catch (IllegalStateException e) {
+            return null;
+        }
+
+
         return classJson;
     }
 
@@ -90,6 +100,8 @@ public class Scanner {
 
         int endOfClass = 0;
         Stack<Character> stack = new Stack<Character>();
+
+//        log.debug(fileString);
 
         for (int i = startOfClass; i < fileString.length(); i++) {
 
@@ -108,17 +120,19 @@ public class Scanner {
 
                 if (stack.isEmpty()){
 //                    endOfClass = i;
-                    String classString = fileString.substring(startOfClass, i);
+                    String classString = fileString.substring(startOfClass+1, i);
                     JsonObject classJson = new JsonObject();
                     classJson.addProperty("file", fileName);
                     classJson.addProperty("className", className);
                     classJson.addProperty("classSting", classString);
                     classes.add(classJson);
 
-                    if (i < fileString.length()){
+                    if (i+1 < fileString.length()){
                         String restOfTheString = fileString.substring(i, fileString.length());
                         JsonObject nextClass = this.getClass(restOfTheString);
-                        this.findOutterClasses(fileName, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1);
+                        if (nextClass != null) {
+                            this.findOutterClasses(fileName, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1);
+                        }
                     }
                     break;
                 }
