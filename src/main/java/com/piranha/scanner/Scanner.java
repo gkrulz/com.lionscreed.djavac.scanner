@@ -1,6 +1,7 @@
 package com.piranha.scanner;
 
 import com.google.gson.*;
+import com.google.gson.annotations.JsonAdapter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -44,6 +45,10 @@ public class Scanner {
             InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(f));
 
             String fileString = FileUtils.readFileToString(f, inputStreamReader.getEncoding());
+
+            //Finding import statements
+            JsonArray importStatements = this.findImportStatements(fileString);
+            log.debug(importStatements);
 
             JsonObject classJson = this.getClass(fileString);
 
@@ -182,12 +187,10 @@ public class Scanner {
                 classDeclaration = classDeclaration.replace("interface", "");
                 classDeclaration = classDeclaration.replace("enum", "");
                 classDeclaration = classDeclaration.replace("{", "");
-//                classDeclaration = classDeclaration.replace("\n", "");
                 classDeclaration = classDeclaration.trim();
                 String[] classNameParts = classDeclaration.split(" ");
                 classDeclaration = classNameParts[0];
 
-                log.debug("\""+classDeclaration+"\"");
                 innerClasses.add(classDeclaration.trim());
                 classString = classString.substring(end, classString.length() - 1);
             }
@@ -221,5 +224,22 @@ public class Scanner {
         }
 
         return classList;
+    }
+
+    public JsonArray findImportStatements(String fileString) {
+        Pattern pattern = Pattern.compile("import(\\s+static)?\\s+(\\w+\\.)*(\\w+|\\*)");
+
+        Matcher matcher = pattern.matcher(fileString);
+        JsonArray importStatemetns = new JsonArray();
+
+        try {
+            while (matcher.find()) {
+                importStatemetns.add(new JsonPrimitive(matcher.group()));
+            }
+        } catch (IllegalStateException e) {
+            return null;
+        }
+
+        return importStatemetns;
     }
 }
