@@ -12,7 +12,7 @@ import java.util.Collection;
 public class TestScanner {
     public static void main(String[] args) {
         Scanner scanner = new Scanner();
-        Collection fileCollection = scanner.read();
+        Collection fileCollection = scanner.readFiles();
         ArrayList<File> files = new ArrayList<File>();
 
         for(Object obj :fileCollection){
@@ -21,7 +21,7 @@ public class TestScanner {
         }
 
         try {
-            scanner.findDependencies(files);
+            scanner.scan(files);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -1,5 +1,7 @@
 package com.piranha.scanner;
 
+import com.google.gson.JsonObject;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,8 +12,10 @@ import java.util.Collection;
  */
 public class Bootstrap {
     public static void main(String[] args) {
+        ArrayList<JsonObject> classes;
+
         Scanner scanner = new Scanner();
-        Collection fileCollection = scanner.read();
+        Collection fileCollection = scanner.readFiles();
         ArrayList<File> files = new ArrayList<File>();
 
         for(Object obj :fileCollection){
@@ -20,9 +24,11 @@ public class Bootstrap {
         }
 
         try {
-            scanner.findDependencies(files);
+            classes = scanner.scan(files);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
     }
 }
