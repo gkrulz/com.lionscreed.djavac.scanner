@@ -1,7 +1,6 @@
 package com.piranha.scanner;
 
 import com.google.gson.*;
-import com.google.gson.annotations.JsonAdapter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -11,9 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Stack;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +20,7 @@ import java.util.regex.Pattern;
 public class Scanner {
     private static final Logger log = Logger.getLogger(Scanner.class);
     private ArrayList<JsonObject> classes;
+    private ArrayList<JsonObject> classDetails;
 
     public Scanner() {
         classes = new ArrayList<>();
@@ -48,13 +46,13 @@ public class Scanner {
 
             //Finding import statements
             JsonArray importStatements = this.findImportStatements(fileString);
-            log.debug(importStatements);
+//            log.debug(importStatements);
 
             JsonObject classJson = this.getClass(fileString);
 
             try {
                 if (classJson != null) {
-                    this.findOuterClasses(f, classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1);
+                    this.findOuterClasses(f, classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1, importStatements);
                 }
             } catch (IllegalStateException e) {
                 log.error(f.getName() + " - No match found");
@@ -75,8 +73,8 @@ public class Scanner {
             classJson.add("innerClasses", innerClassesJsonArray);
         }
 
-        log.debug(gson.toJson(classes));
-        log.debug(this.getFullClassList());
+//        log.debug(gson.toJson(classes));
+        classDetails = this.getFullClassList();
         return classes;
     }
 
@@ -85,9 +83,11 @@ public class Scanner {
 //        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
 //                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
 
-        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
-                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{)|" +
-                "((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
+//        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
+//                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{)|" +
+//                "((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
+
+        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+(\\w+\\.)*?\\w+)|(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+(\\w+\\.)*?\\w+\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{)|((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
 
         Matcher matcher = pattern.matcher(fileString);
 
@@ -107,7 +107,7 @@ public class Scanner {
         return classJson;
     }
 
-    public void findOuterClasses(File file, String className, String fileString, int startOfClass) {
+    public void findOuterClasses(File file, String className, String fileString, int startOfClass, JsonArray importStatements) {
         String classDeclaration = className;
 //        int endOfClass = 0;
         Stack<Character> stack = new Stack<Character>();
@@ -151,13 +151,14 @@ public class Scanner {
                     classJson.addProperty("className", className);
                     classJson.addProperty("classDeclaration", classDeclaration.trim());
                     classJson.addProperty("classString", classString.trim());
+                    classJson.add("importStatements", importStatements);
                     classes.add(classJson);
 
                     if (i + 1 < fileString.length()) {
                         String restOfTheString = fileString.substring(i, fileString.length());
                         JsonObject nextClass = this.getClass(restOfTheString);
                         if (nextClass != null) {
-                            this.findOuterClasses(file, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1);
+                            this.findOuterClasses(file, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1, importStatements);
                         }
                     }
                     break;
@@ -210,14 +211,16 @@ public class Scanner {
 //            log.debug(packageName);
 
             JsonObject tempClassJson = new JsonObject();
-            tempClassJson.addProperty("class", packageName+classJson.get("className").getAsString());
-            tempClassJson.addProperty("outerClass", packageName+classJson.get("className").getAsString());
+            tempClassJson.addProperty("packageName", packageName);
+            tempClassJson.addProperty("className", classJson.get("className").getAsString());
+            tempClassJson.addProperty("outerClass", classJson.get("className").getAsString());
             classList.add(tempClassJson);
             if(classJson.get("innerClasses").getAsJsonArray().size() > 0) {
                 for (JsonElement innerClass : classJson.get("innerClasses").getAsJsonArray()){
                     JsonObject tempInnerClassJson = new JsonObject();
-                    tempInnerClassJson.addProperty("class", packageName+innerClass.getAsString());
-                    tempInnerClassJson.addProperty("outerClass", packageName+classJson.get("className").getAsString());
+                    tempInnerClassJson.addProperty("packageName", packageName);
+                    tempInnerClassJson.addProperty("className", innerClass.getAsString());
+                    tempInnerClassJson.addProperty("outerClass", classJson.get("className").getAsString());
                     classList.add(tempInnerClassJson);
                 }
             }
@@ -241,5 +244,69 @@ public class Scanner {
         }
 
         return importStatemetns;
+    }
+
+    public String removeCommentsAndStrings(String classString) {
+        return classString.replaceAll("((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/", "");
+    }
+
+    public void findDependencies() {
+
+        for (JsonObject classJson : classes) {
+            String className = classJson.get("className").getAsString();
+            String classDeclaration = classJson.get("classDeclaration").getAsString();
+            String classString = classJson.get("classString").getAsString();
+            JsonArray innerClasses = classJson.get("innerClasses").getAsJsonArray();
+
+            JsonArray importStatements = classJson.get("importStatements").getAsJsonArray();
+
+            Set<String> dependencies = new HashSet<>();
+
+            for (JsonObject classDetailsJson : classDetails) {
+                String packageName = classDetailsJson.get("packageName").getAsString();
+                String checkingClassName = classDetailsJson.get("className").getAsString();
+                String outerClass = classDetailsJson.get("outerClass").getAsString();
+
+                //checking for dependencies in the class declaration
+                classDeclaration = classDeclaration.replace(className, "");
+                if (classDeclaration.contains(" "+checkingClassName)) {
+                    log.debug(className + " is dependent on " + outerClass);
+                    dependencies.add(outerClass);
+                }
+                if (classDeclaration.contains(packageName + checkingClassName)) {
+                    log.debug(className + " is dependent on " + packageName+outerClass);
+                    dependencies.add(packageName+outerClass);
+                }
+
+                //checking for dependencies in the class body
+                String cleanedUpClassString = this.removeCommentsAndStrings(classString);
+                cleanedUpClassString = cleanedUpClassString.replace(className, "");
+                for (JsonElement innerClass : innerClasses) {
+                    cleanedUpClassString = cleanedUpClassString.replace(innerClass.getAsString(), "");
+                }
+//                log.debug(cleanedUpClassString);
+
+                if (cleanedUpClassString.contains(" "+checkingClassName)) {
+                    dependencies.add(outerClass);
+                    log.debug(className + " is dependent on " + outerClass);
+                }
+                if (cleanedUpClassString.contains(packageName + checkingClassName)) {
+                    dependencies.add(outerClass);
+                    log.debug(className + " is dependent on " + packageName+outerClass);
+                }
+
+
+                //In the end add dependencies to classes json
+                JsonArray dependencyJsonArray = new JsonArray();
+
+                for (String dependency : dependencies) {
+                    dependencyJsonArray.add(new JsonPrimitive(dependency));
+                }
+
+                classJson.add("dependencies", dependencyJsonArray);
+            }
+        }
+
+        log.debug(classes);
     }
 }
