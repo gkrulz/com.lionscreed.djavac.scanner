@@ -22,10 +22,17 @@ public class Scanner {
     private ArrayList<JsonObject> classes;
     private ArrayList<JsonObject> classDetails;
 
+    /***
+     * overloaded constructor
+     */
     public Scanner() {
         classes = new ArrayList<>();
     }
 
+    /***
+     * The method to read all the files found in the given location and input them to the system.
+     * @return collection of all the files found in the given location.
+     */
     public Collection readFiles() {
         log.debug(System.getProperty("user.dir"));
         File file = new File(System.getProperty("user.dir") + "/src/main/resources");
@@ -33,15 +40,23 @@ public class Scanner {
         return files;
     }
 
+    /***
+     * The method to scan through all the source files found and find classes, interfaces, enums and inner classes.
+     * @param files
+     * @return a Json containing a list of all the classes, interfaces, enums and their details.
+     * @throws IOException
+     */
     public ArrayList<JsonObject> scan(ArrayList<File> files) throws IOException {
         Gson gson = new Gson();
 //        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
+        //Iterate through all the files
         for (File f : files) {
 
 //            log.debug(f.getName());
             InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(f));
 
+            //getting file to a string
             String fileString = FileUtils.readFileToString(f, inputStreamReader.getEncoding());
 
             //Finding import statements
@@ -78,6 +93,11 @@ public class Scanner {
         return classes;
     }
 
+    /***
+     * The method to find a class declaration in a given String
+     * @param fileString
+     * @return Json with class details
+     */
     public JsonObject getClass(String fileString) {
 
 //        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
@@ -107,6 +127,14 @@ public class Scanner {
         return classJson;
     }
 
+    /***
+     * The method to find all outer classes in a given .java file string.
+     * @param file
+     * @param className
+     * @param fileString
+     * @param startOfClass
+     * @param importStatements
+     */
     public void findOuterClasses(File file, String className, String fileString, int startOfClass, JsonArray importStatements) {
         String classDeclaration = className;
 //        int endOfClass = 0;
@@ -167,6 +195,11 @@ public class Scanner {
         }
     }
 
+    /***
+     * The method to find all the names of inner classes in a given class body string
+     * @param classString
+     * @return List of strings containing the names of inner classes.
+     */
     public ArrayList<String> findInnerClasses(String classString) {
         ArrayList<String> innerClasses = new ArrayList<>();
         JsonObject innerClass = new JsonObject();
@@ -200,6 +233,11 @@ public class Scanner {
         return innerClasses;
     }
 
+    /***
+     * The method to get a full list of names of the classes, interfaces, enums and inner classes with their details
+     * @return  list of Json objects with full list of all the classes, interfaces, enums, and inners classes along
+     *          with outer class name and package name.
+     */
     public ArrayList<JsonObject> getFullClassList(){
         ArrayList<JsonObject> classList = new ArrayList<>();
         String rootPath = System.getProperty("user.dir")+"/src/main/resources/";
@@ -229,6 +267,11 @@ public class Scanner {
         return classList;
     }
 
+    /***
+     * The method to find the import statements in a given .java file string.
+     * @param fileString
+     * @return Json array of all the import statements.
+     */
     public JsonArray findImportStatements(String fileString) {
         Pattern pattern = Pattern.compile("import(\\s+static)?\\s+(\\w+\\.)*(\\w+|\\*)");
 
@@ -246,10 +289,18 @@ public class Scanner {
         return importStatemetns;
     }
 
+    /***
+     * The method to remove any comments or String literals in a given class string.
+     * @param classString
+     * @return class string without any comments or string literals.
+     */
     public String removeCommentsAndStrings(String classString) {
         return classString.replaceAll("((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/", "");
     }
 
+    /***
+     * The method to find the dependencies for all the classes in the source code.
+     */
     public void findDependencies() {
 
         for (JsonObject classJson : classes) {
