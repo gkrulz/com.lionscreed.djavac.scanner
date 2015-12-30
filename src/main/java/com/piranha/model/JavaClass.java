@@ -1,4 +1,4 @@
-package com.piranha.scanner.model;
+package com.piranha.model;
 
 /**
  * Created by hub on 9/23/15.

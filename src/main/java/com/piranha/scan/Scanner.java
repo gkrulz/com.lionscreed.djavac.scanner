@@ -1,4 +1,4 @@
-package com.piranha.scanner;
+package com.piranha.scan;
 
 import com.google.gson.*;
 import org.apache.commons.io.FileUtils;
@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 public class Scanner {
     private static final Logger log = Logger.getLogger(Scanner.class);
     private ArrayList<JsonObject> classes;
-    private ArrayList<JsonObject> classDetails;
+    private ArrayList<JsonObject> detailedClassList;
 
     /***
      * overloaded constructor
@@ -61,7 +61,7 @@ public class Scanner {
 
             //Finding import statements
             JsonArray importStatements = this.findImportStatements(fileString);
-//            log.debug(importStatements);
+            log.debug(importStatements);
 
             JsonObject classJson = this.getClass(fileString);
 
@@ -89,7 +89,7 @@ public class Scanner {
         }
 
 //        log.debug(gson.toJson(classes));
-        classDetails = this.getFullClassList();
+        detailedClassList = this.getFullClassList();
         return classes;
     }
 
@@ -280,7 +280,7 @@ public class Scanner {
 
         try {
             while (matcher.find()) {
-                importStatemetns.add(new JsonPrimitive(matcher.group()));
+                importStatemetns.add(new JsonPrimitive(matcher.group().replace("import", "").trim()));
             }
         } catch (IllegalStateException e) {
             return null;
@@ -300,8 +300,9 @@ public class Scanner {
 
     /***
      * The method to find the dependencies for all the classes in the source code.
+     * @return list of json objects which contain all class details along with dependencies.
      */
-    public void findDependencies() {
+    public ArrayList<JsonObject> findDependencies() {
 
         for (JsonObject classJson : classes) {
             String className = classJson.get("className").getAsString();
@@ -313,7 +314,7 @@ public class Scanner {
 
             Set<String> dependencies = new HashSet<>();
 
-            for (JsonObject classDetailsJson : classDetails) {
+            for (JsonObject classDetailsJson : getDetailedClassList()) {
                 String packageName = classDetailsJson.get("packageName").getAsString();
                 String checkingClassName = classDetailsJson.get("className").getAsString();
                 String outerClass = classDetailsJson.get("outerClass").getAsString();
@@ -321,6 +322,31 @@ public class Scanner {
                 //checking for dependencies in the class declaration
                 classDeclaration = classDeclaration.replace(className, "");
                 if (classDeclaration.contains(" "+checkingClassName)) {
+
+                    for (JsonElement importStatement : importStatements) {
+                        if (importStatement.getAsString().contains(checkingClassName)) {
+
+                            String importPackageName = importStatement.getAsString().replace(checkingClassName, "").trim();
+                            String importClassName = importStatement.getAsString().replace(importPackageName, "").trim();
+                            if ((packageName + checkingClassName).equals(importStatement.getAsString())) {
+                                dependencies.add(packageName + outerClass);
+                                classDeclaration = classDeclaration.replace(checkingClassName, "");
+                                log.debug("333");
+                            } else if (checkingClassName.equals(importClassName)) {
+                                for (JsonObject classDetailsJson01 : getDetailedClassList()) {
+                                    String packageName01 = classDetailsJson01.get("packageName").getAsString();
+                                    String checkingClassName01 = classDetailsJson01.get("className").getAsString();
+                                    String outerClass01 = classDetailsJson01.get("outerClass").getAsString();
+
+                                    if ((packageName01 + checkingClassName01).equals(importStatement.getAsString())) {
+                                        dependencies.add(packageName01 + outerClass01);
+                                        classDeclaration = classDeclaration.replace(checkingClassName01, "");
+                                        log.debug("worst case - " + packageName01 + outerClass01);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     log.debug(className + " is dependent on " + outerClass);
                     dependencies.add(outerClass);
                 }
@@ -359,5 +385,10 @@ public class Scanner {
         }
 
         log.debug(classes);
+        return classes;
+    }
+
+    public ArrayList<JsonObject> getDetailedClassList() {
+        return detailedClassList;
     }
 }

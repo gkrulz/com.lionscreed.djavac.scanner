@@ -1,19 +1,16 @@
-package com.piranha.scanner;
+package com.piranha.scan.test;
 
-import com.google.gson.JsonObject;
+import com.piranha.scan.Scanner;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Created by Padmaka on 8/25/2015.
+ * Created by Padmaka on 9/8/2015.
  */
-public class Bootstrap {
+public class TestScanner {
     public static void main(String[] args) {
-        ArrayList<JsonObject> classes;
-
         Scanner scanner = new Scanner();
         Collection fileCollection = scanner.readFiles();
         ArrayList<File> files = new ArrayList<File>();
@@ -24,12 +21,9 @@ public class Bootstrap {
         }
 
         try {
-            classes = scanner.scan(files);
+            scanner.scan(files);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        scanner.findDependencies();
-
     }
 }

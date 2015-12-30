@@ -43,7 +43,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.piranha.scanner.Bootstrap</mainClass>
+                            <mainClass>com.piranha.Bootstrap</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
