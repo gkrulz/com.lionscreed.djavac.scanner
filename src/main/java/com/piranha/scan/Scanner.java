@@ -34,20 +34,18 @@ public class Scanner {
      * @return collection of all the files found in the given location.
      */
     public Collection readFiles() {
-        log.debug(System.getProperty("user.dir"));
         File file = new File(System.getProperty("user.dir") + "/src/main/resources");
-        Collection files = FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
-        return files;
+        return FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
     }
 
     /***
      * The method to scan through all the source files found and find classes, interfaces, enums and inner classes.
-     * @param files
+     * @param files file list
      * @return a Json containing a list of all the classes, interfaces, enums and their details.
      * @throws IOException
      */
     public ArrayList<JsonObject> scan(ArrayList<File> files) throws IOException {
-        Gson gson = new Gson();
+//        Gson gson = new Gson();
 //        Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         //Iterate through all the files
@@ -61,7 +59,7 @@ public class Scanner {
 
             //Finding import statements
             JsonArray importStatements = this.findImportStatements(fileString);
-            log.debug(importStatements);
+//            log.debug(importStatements);
 
             JsonObject classJson = this.getClass(fileString);
 
@@ -95,7 +93,7 @@ public class Scanner {
 
     /***
      * The method to find a class declaration in a given String
-     * @param fileString
+     * @param fileString File string
      * @return Json with class details
      */
     public JsonObject getClass(String fileString) {
@@ -307,6 +305,13 @@ public class Scanner {
         for (JsonObject classJson : classes) {
             String className = classJson.get("className").getAsString();
             String classDeclaration = classJson.get("classDeclaration").getAsString();
+
+            //Getting the package name of the current class
+            String rootPath = System.getProperty("user.dir")+"/src/main/resources/";
+            String classPackageName = classJson.get("filePath").getAsString().replace(rootPath, "");
+            classPackageName = classPackageName.replace("/", ".");
+            classPackageName = classPackageName.replace(classJson.get("file").getAsString(), "");
+
             String classString = classJson.get("classString").getAsString();
             JsonArray innerClasses = classJson.get("innerClasses").getAsJsonArray();
 
@@ -320,57 +325,155 @@ public class Scanner {
                 String outerClass = classDetailsJson.get("outerClass").getAsString();
 
                 //checking for dependencies in the class declaration
+                //------------------------------------------------------------------------------------------------------
+
                 classDeclaration = classDeclaration.replace(className, "");
+
                 if (classDeclaration.contains(" "+checkingClassName)) {
 
+                    String matchingImportStatement = null;
+                    ArrayList<String> importStatementsWithoutClassNames = new ArrayList<>();
+
                     for (JsonElement importStatement : importStatements) {
-                        if (importStatement.getAsString().contains(checkingClassName)) {
+                        String importString = importStatement.getAsString();
 
-                            String importPackageName = importStatement.getAsString().replace(checkingClassName, "").trim();
-                            String importClassName = importStatement.getAsString().replace(importPackageName, "").trim();
-                            if ((packageName + checkingClassName).equals(importStatement.getAsString())) {
-                                dependencies.add(packageName + outerClass);
-                                classDeclaration = classDeclaration.replace(checkingClassName, "");
-                                log.debug("333");
-                            } else if (checkingClassName.equals(importClassName)) {
-                                for (JsonObject classDetailsJson01 : getDetailedClassList()) {
-                                    String packageName01 = classDetailsJson01.get("packageName").getAsString();
-                                    String checkingClassName01 = classDetailsJson01.get("className").getAsString();
-                                    String outerClass01 = classDetailsJson01.get("outerClass").getAsString();
+                        if (importString.matches("(\\w+\\.)*" + checkingClassName + "$")) {
+                            matchingImportStatement = importString;
+                            break;
+                        } else if (importString.matches("(\\w+\\.)*\\*$")) {
+                            importStatementsWithoutClassNames.add(importString);
+                        }
+                    }
 
-                                    if ((packageName01 + checkingClassName01).equals(importStatement.getAsString())) {
-                                        dependencies.add(packageName01 + outerClass01);
-                                        classDeclaration = classDeclaration.replace(checkingClassName01, "");
-                                        log.debug("worst case - " + packageName01 + outerClass01);
-                                    }
+                    if (matchingImportStatement != null) {
+
+                        if (matchingImportStatement.equals(packageName + checkingClassName)) {
+                            dependencies.add(packageName + outerClass);
+                            classDeclaration = classDeclaration.replace(checkingClassName, "");
+                            log.debug(className + " is dependent on " + packageName + outerClass);
+                        }
+
+                    } else {
+                        boolean dependencyFound = false;
+
+                        for (String importStatementWithoutClassName : importStatementsWithoutClassNames) {
+                            String importPackageName = importStatementWithoutClassName.replace("*", "");
+
+                            for (JsonObject classDetailsJsonLocal : getDetailedClassList()) {
+                                String packageNameLocal = classDetailsJsonLocal.get("packageName").getAsString();
+                                String checkingClassNameLocal = classDetailsJsonLocal.get("className").getAsString();
+                                String outerClassLocal = classDetailsJsonLocal.get("outerClass").getAsString();
+
+                                if ((importPackageName + checkingClassName).equals(packageNameLocal + checkingClassNameLocal)) {
+                                    dependencies.add(packageNameLocal + outerClassLocal);
+                                    classDeclaration = classDeclaration.replace(checkingClassName, "");
+                                    dependencyFound = true;
+                                    log.debug(className + " is dependent on " + packageNameLocal + outerClassLocal);
+                                }
+                            }
+                        }
+
+                        if (dependencyFound == false) {
+                            for (JsonObject classDetailsJsonLocal : getDetailedClassList()) {
+                                String packageNameLocal = classDetailsJsonLocal.get("packageName").getAsString();
+                                String classNameLocal = classDetailsJsonLocal.get("className").getAsString();
+                                String outerClassLocal = classDetailsJsonLocal.get("outerClass").getAsString();
+
+                                if (classPackageName.equals(packageNameLocal) && classNameLocal.equals(checkingClassName)) {
+                                    dependencies.add(packageNameLocal + outerClassLocal);
+                                    classDeclaration = classDeclaration.replace(checkingClassName, "");
+                                    log.debug(className + " is dependent on " + packageNameLocal + outerClassLocal);
                                 }
                             }
                         }
                     }
-                    log.debug(className + " is dependent on " + outerClass);
-                    dependencies.add(outerClass);
-                }
-                if (classDeclaration.contains(packageName + checkingClassName)) {
-                    log.debug(className + " is dependent on " + packageName+outerClass);
-                    dependencies.add(packageName+outerClass);
                 }
 
+                if (classDeclaration.contains(packageName + checkingClassName)) {
+                    dependencies.add(packageName + outerClass);
+                    classDeclaration = classDeclaration.replace(packageName + checkingClassName, "");
+                    log.debug(className + " is dependent on " + packageName + outerClass);
+                }
+
+                //------------------------------------------------------------------------------------------------------
+
                 //checking for dependencies in the class body
+                //------------------------------------------------------------------------------------------------------
+
                 String cleanedUpClassString = this.removeCommentsAndStrings(classString);
                 cleanedUpClassString = cleanedUpClassString.replace(className, "");
+
                 for (JsonElement innerClass : innerClasses) {
                     cleanedUpClassString = cleanedUpClassString.replace(innerClass.getAsString(), "");
                 }
 //                log.debug(cleanedUpClassString);
-
+//
                 if (cleanedUpClassString.contains(" "+checkingClassName)) {
-                    dependencies.add(outerClass);
-                    log.debug(className + " is dependent on " + outerClass);
+
+                    String matchingImportStatement = null;
+                    ArrayList<String> importStatementsWithoutClassNames = new ArrayList<>();
+
+                    for (JsonElement importStatement : importStatements) {
+                        String importString = importStatement.getAsString();
+
+                        if (importString.matches("(\\w+\\.)*" + checkingClassName + "$")) {
+                            matchingImportStatement = importString;
+                            break;
+                        } else if (importString.matches("(\\w+\\.)*\\*$")) {
+                            importStatementsWithoutClassNames.add(importString);
+                        }
+                    }
+
+                    if (matchingImportStatement != null) {
+
+                        if (matchingImportStatement.equals(packageName + checkingClassName)) {
+                            dependencies.add(packageName + outerClass);
+                            cleanedUpClassString = cleanedUpClassString.replace(checkingClassName, "");
+                            log.debug(className + " is dependent on " + packageName + outerClass);
+                        }
+
+                    } else {
+                        boolean dependencyFound = false;
+
+                        for (String importStatementWithoutClassName : importStatementsWithoutClassNames) {
+                            String importPackageName = importStatementWithoutClassName.replace("*", "");
+
+                            for (JsonObject classDetailsJsonLocal : getDetailedClassList()) {
+                                String packageNameLocal = classDetailsJsonLocal.get("packageName").getAsString();
+                                String checkingClassNameLocal = classDetailsJsonLocal.get("className").getAsString();
+                                String outerClassLocal = classDetailsJsonLocal.get("outerClass").getAsString();
+
+                                if ((importPackageName + checkingClassName).equals(packageNameLocal + checkingClassNameLocal)) {
+                                    dependencies.add(packageNameLocal + outerClassLocal);
+                                    cleanedUpClassString = cleanedUpClassString.replace(checkingClassName, "");
+                                    dependencyFound = true;
+                                    log.debug(className + " is dependent on " + packageNameLocal + outerClassLocal);
+                                }
+                            }
+                        }
+
+                        if (dependencyFound == false) {
+                            for (JsonObject classDetailsJsonLocal : getDetailedClassList()) {
+                                String packageNameLocal = classDetailsJsonLocal.get("packageName").getAsString();
+                                String classNameLocal = classDetailsJsonLocal.get("className").getAsString();
+                                String outerClassLocal = classDetailsJsonLocal.get("outerClass").getAsString();
+
+                                if (classPackageName.equals(packageNameLocal) && classNameLocal.equals(checkingClassName)) {
+                                    dependencies.add(packageNameLocal + outerClassLocal);
+                                    cleanedUpClassString = cleanedUpClassString.replace(checkingClassName, "");
+                                    log.debug(className + " is dependent on " + packageNameLocal + outerClassLocal);
+                                }
+                            }
+                        }
+                    }
                 }
+
                 if (cleanedUpClassString.contains(packageName + checkingClassName)) {
-                    dependencies.add(outerClass);
-                    log.debug(className + " is dependent on " + packageName+outerClass);
+                    dependencies.add(packageName + outerClass);
+                    log.debug(className + " is dependent on " + packageName + outerClass);
                 }
+
+                //------------------------------------------------------------------------------------------------------
 
 
                 //In the end add dependencies to classes json

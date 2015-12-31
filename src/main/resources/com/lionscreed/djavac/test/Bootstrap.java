@@ -1,17 +1,17 @@
 package com.lionscreed.djavac.test;
 
-import com.lionscreed.djavac.compile.Compiler;
+import com.lionscreed.djavac.acomp.*;
 
 /**
  * Created by Padmaka on 8/27/2015.
  */
-public class Bootstrap extends Compiler implements Stopable {
+public class Bootstrap extends Compiler implements com.lionscreed.djavac.test.Stopable {
 
     /* This is
      a comment */
 
     public static void main(String[] args) {
-        Vehicle corolla = new ToyotaCorolla();
+        Vehicle corolla = new com.lionscreed.djavac.test.ToyotaCorolla();
         Vehicle civic = new HondaCivic();
         Vehicle kdh = new ToyotaKDH();
 
