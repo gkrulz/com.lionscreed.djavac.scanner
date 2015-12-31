@@ -1,3 +1,2 @@
-# com.piranha.scanner
-Project Piranha - A Distributed Java Compiler
+# Project Piranha - A Distributed Java Compiler
 
