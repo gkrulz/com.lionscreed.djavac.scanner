@@ -65,7 +65,8 @@ public class Scanner {
 
             try {
                 if (classJson != null) {
-                    this.findOuterClasses(f, classJson.get("classDeclaration").getAsString(), fileString, classJson.get("end").getAsInt() - 1, importStatements);
+                    this.findOuterClasses(f, classJson.get("classDeclaration").getAsString(),
+                            fileString, classJson.get("end").getAsInt() - 1, importStatements);
                 }
             } catch (IllegalStateException e) {
                 log.error(f.getName() + " - No match found");
@@ -98,14 +99,13 @@ public class Scanner {
      */
     public JsonObject getClass(String fileString) {
 
-//        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
-//                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
-
-//        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+\\w+)|(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+\\w+\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
-//                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{)|" +
-//                "((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)(\\s+implements\\s+\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
-
-        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)((\\s+extends\\s+(\\w+\\.)*?\\w+)|(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)|(\\s+extends\\s+(\\w+\\.)*?\\w+\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{)|((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
+        Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)" +
+                "((\\s+extends\\s+(\\w+\\.)*?\\w+)|(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)|" +
+                "(\\s+extends\\s+(\\w+\\.)*?\\w+\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*))?\\s*\\{)|" +
+                "((public|protected)?(\\s+abstract)?(\\s+static)?\\s+interface\\s+(\\w+)(\\s+extends\\s+" +
+                "(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{)|" +
+                "((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)" +
+                "(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
 
         Matcher matcher = pattern.matcher(fileString);
 
@@ -133,7 +133,8 @@ public class Scanner {
      * @param startOfClass
      * @param importStatements
      */
-    public void findOuterClasses(File file, String className, String fileString, int startOfClass, JsonArray importStatements) {
+    public void findOuterClasses(File file, String className, String fileString, int startOfClass,
+                                 JsonArray importStatements) {
         String classDeclaration = className;
 //        int endOfClass = 0;
         Stack<Character> stack = new Stack<Character>();
@@ -184,7 +185,8 @@ public class Scanner {
                         String restOfTheString = fileString.substring(i, fileString.length());
                         JsonObject nextClass = this.getClass(restOfTheString);
                         if (nextClass != null) {
-                            this.findOuterClasses(file, nextClass.get("classDeclaration").getAsString(), restOfTheString, nextClass.get("end").getAsInt() - 1, importStatements);
+                            this.findOuterClasses(file, nextClass.get("classDeclaration").getAsString(),
+                                    restOfTheString, nextClass.get("end").getAsInt() - 1, importStatements);
                         }
                     }
                     break;

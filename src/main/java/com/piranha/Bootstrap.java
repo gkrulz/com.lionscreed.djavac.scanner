@@ -1,6 +1,7 @@
 package com.piranha;
 
 import com.google.gson.JsonObject;
+import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
 
 import java.io.File;
@@ -34,6 +35,7 @@ public class Bootstrap {
         classes = scanner.findDependencies();
         detailedClassList = scanner.getDetailedClassList();
 
-
+        Scheduler scheduler = new Scheduler();
+        scheduler.makeSchedule(classes, detailedClassList);
     }
 }
