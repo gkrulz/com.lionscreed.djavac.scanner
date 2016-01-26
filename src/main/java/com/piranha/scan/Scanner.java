@@ -30,11 +30,21 @@ public class Scanner {
     }
 
     /***
-     * The method to read all the files found in the given location and input them to the system.
+     * The method to read all the files found in the default location and input them to the system.
      * @return collection of all the files found in the given location.
      */
     public Collection readFiles() {
         File file = new File(System.getProperty("user.dir") + "/src/main/resources");
+        return FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
+    }
+
+    /***
+     * The method to read all the files found in the given location and input them to the system.
+     * @param path
+     * @return collection of all the files found in the given location.
+     */
+    public Collection readFiles(String path) {
+        File file = new File(path);
         return FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
     }
 
@@ -58,7 +68,8 @@ public class Scanner {
             String fileString = FileUtils.readFileToString(f, inputStreamReader.getEncoding());
 
             //Finding import statements
-            JsonArray importStatements = this.findImportStatements(fileString);
+            String cleanedUpFileString = this.removeCommentsAndStrings(fileString);
+            JsonArray importStatements = this.findImportStatements(cleanedUpFileString);
 //            log.debug(importStatements);
 
             JsonObject classJson = this.getClass(fileString);
@@ -98,6 +109,7 @@ public class Scanner {
      * @return Json with class details
      */
     public JsonObject getClass(String fileString) {
+        String cleanedUpFileString = this.removeCommentsAndStrings(fileString);
 
         Pattern pattern = Pattern.compile("(((public|protected|private|)?(\\s+abstract)?(\\s+static)?\\s+class\\s+(\\w+)" +
                 "((\\s+extends\\s+(\\w+\\.)*?\\w+)|(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)|" +
@@ -107,7 +119,7 @@ public class Scanner {
                 "((public|protected|private)?(\\s+static)?\\s+enum\\s+(\\w+)" +
                 "(\\s+implements\\s+(\\w+\\.)*?\\w+\\s*(,\\s*\\w+\\s*)*)?\\s*\\{))");
 
-        Matcher matcher = pattern.matcher(fileString);
+        Matcher matcher = pattern.matcher(cleanedUpFileString);
 
         JsonObject classJson = null;
         try {
@@ -135,15 +147,19 @@ public class Scanner {
      */
     public void findOuterClasses(File file, String className, String fileString, int startOfClass,
                                  JsonArray importStatements) {
+        String cleanedUpFileString = this.removeCommentsAndStrings(fileString);
+
+        String rootPath = System.getProperty("user.dir")+"/src/main/resources/";
+
         String classDeclaration = className;
 //        int endOfClass = 0;
         Stack<Character> stack = new Stack<Character>();
 
-//        log.debug(fileString);
+//        log.debug(cleanedUpFileString);
 
-        for (int i = startOfClass; i < fileString.length(); i++) {
+        for (int i = startOfClass; i < cleanedUpFileString.length(); i++) {
 
-            char current = fileString.charAt(i);
+            char current = cleanedUpFileString.charAt(i);
             if (current == '{') {
                 stack.push(current);
             }
@@ -179,6 +195,11 @@ public class Scanner {
                     classJson.addProperty("classDeclaration", classDeclaration.trim());
                     classJson.addProperty("classString", classString.trim());
                     classJson.add("importStatements", importStatements);
+                    String packageName = classJson.get("filePath").getAsString().replace(rootPath, "");
+                    packageName = packageName.replace("/", ".");
+                    packageName = packageName.replace(classJson.get("file").getAsString(), "");
+                    classJson.addProperty("package", packageName);
+                    classJson.addProperty("absoluteClassName", packageName + className);
                     classes.add(classJson);
 
                     if (i + 1 < fileString.length()) {
@@ -295,7 +316,33 @@ public class Scanner {
      * @return class string without any comments or string literals.
      */
     public String removeCommentsAndStrings(String classString) {
-        return classString.replaceAll("((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/", "");
+//        log.debug(classString.length());
+
+        StringBuilder result = new StringBuilder();
+        Pattern pattern = Pattern.compile("((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/");
+        Matcher matcher = pattern.matcher(classString);
+        int previous = 0;
+        while (matcher.find()) {
+            result.append(classString.substring(previous, matcher.start()));
+            result.append(buildStringWithDots(matcher.end() - matcher.start()));
+            previous = matcher.end();
+        }
+        result.append(classString.substring(previous, classString.length()));
+//        log.debug(result.length());
+
+        return result.toString();
+
+//        return classString.replaceAll("((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/", "");
+    }
+
+    public String buildStringWithDots (int size) {
+        StringBuilder str = new StringBuilder();
+
+        for (int i = 0; i < size; i++) {
+            str.append("#");
+        }
+
+        return str.toString();
     }
 
     /***
@@ -403,6 +450,8 @@ public class Scanner {
                 //------------------------------------------------------------------------------------------------------
 
                 String cleanedUpClassString = this.removeCommentsAndStrings(classString);
+//                log.debug(classJson.get("className").getAsString());
+//                log.debug(cleanedUpClassString);
                 cleanedUpClassString = cleanedUpClassString.replace(className, "");
 
                 for (JsonElement innerClass : innerClasses) {

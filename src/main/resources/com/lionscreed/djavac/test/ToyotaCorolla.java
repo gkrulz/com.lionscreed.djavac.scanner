@@ -25,4 +25,9 @@ public class ToyotaCorolla extends Car {
     public String getBodyType() {
         return this.bodyType;
     }
+
+    @Override
+    public void doSomething() {
+
+    }
 }
