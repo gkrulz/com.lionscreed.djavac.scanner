@@ -1,12 +1,12 @@
 package com.piranha.comm;
 
+import com.google.gson.JsonObject;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 /**
@@ -35,10 +35,15 @@ public class CommunicationPipe extends Thread{
         while (true) {
             try {
                 Socket socket = serverSocket.accept();
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                String nodeId = bufferedReader.readLine();
-                getNodes().add(socket);
-                log.debug("Node " + nodeId + " added");
+                DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+
+                ServerSocket nodeCommLine = new ServerSocket(0);
+                JsonObject portInfo = new JsonObject();
+
+                portInfo.addProperty("portNo", nodeCommLine.getLocalPort());
+                this.writeToOutputStream(socket, portInfo);
+                log.debug("Node at " + nodeCommLine.getLocalPort() + " added");
+
             } catch (IOException e) {
                 log.error("Error" , e);
             }
@@ -51,5 +56,12 @@ public class CommunicationPipe extends Thread{
 
     public void setNodes(ArrayList<Socket> nodes) {
         this.nodes = nodes;
+    }
+
+    public void writeToOutputStream (Socket socket, JsonObject data) throws IOException {
+        OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
+        out.write(data.toString());
+        out.flush();
+        out.close();
     }
 }

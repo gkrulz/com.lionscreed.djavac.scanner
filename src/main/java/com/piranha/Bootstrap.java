@@ -25,7 +25,7 @@ public class Bootstrap {
 
         // Listening for other nodes to connect
         //----------------------------------------------------------------------
-//        CommunicationPipe communicationPipe = new CommunicationPipe(9005);
+//       CommunicationPipe communicationPipe = new CommunicationPipe(9005);
 //
 //        communicationPipe.start();
 //        while (true) {
@@ -34,8 +34,6 @@ public class Bootstrap {
 //            }
 //        }
         //----------------------------------------------------------------------
-
-        // class abc {
 
         Scanner scanner = new Scanner();
         Collection fileCollection = scanner.readFiles();
@@ -56,7 +54,7 @@ public class Bootstrap {
         detailedClassList = scanner.getDetailedClassList();
 
         Scheduler scheduler = new Scheduler();
-        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes, detailedClassList);
+        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
 
         //compilation test
         Compiler compiler = new Compiler("/Users/Padmaka/Desktop");
