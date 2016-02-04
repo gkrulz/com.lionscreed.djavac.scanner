@@ -19,7 +19,7 @@ public class Distributor {
             int noOfClassesPerNode = (round.size() / nodes.size()) == 0 ? 1 : round.size() / nodes.size();
 
             for (SocketAddress node : nodes) {
-                if (node)
+//                if (node)
             }
         }
     }
