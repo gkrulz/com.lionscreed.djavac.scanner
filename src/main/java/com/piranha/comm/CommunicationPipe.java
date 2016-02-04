@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -14,7 +15,7 @@ import java.util.ArrayList;
  */
 public class CommunicationPipe extends Thread{
     private static final Logger log = Logger.getLogger(CommunicationPipe.class);
-    private ArrayList<Socket> nodes = new ArrayList<>();
+    private ArrayList<SocketAddress> nodes = new ArrayList<>();
     private int portNo;
 
     public CommunicationPipe(int portNo) {
@@ -37,12 +38,18 @@ public class CommunicationPipe extends Thread{
                 Socket socket = serverSocket.accept();
                 DataInputStream inputStream = new DataInputStream(socket.getInputStream());
 
+                SocketAddress ipAddress = socket.getRemoteSocketAddress();
+                log.debug(ipAddress);
+
                 ServerSocket nodeCommLine = new ServerSocket(0);
                 JsonObject portInfo = new JsonObject();
 
                 portInfo.addProperty("portNo", nodeCommLine.getLocalPort());
                 this.writeToOutputStream(socket, portInfo);
+                nodes.add(ipAddress);
                 log.debug("Node at " + nodeCommLine.getLocalPort() + " added");
+
+
 
             } catch (IOException e) {
                 log.error("Error" , e);
@@ -50,11 +57,11 @@ public class CommunicationPipe extends Thread{
         }
     }
 
-    public ArrayList<Socket> getNodes() {
+    public ArrayList<SocketAddress> getNodes() {
         return nodes;
     }
 
-    public void setNodes(ArrayList<Socket> nodes) {
+    public void setNodes(ArrayList<SocketAddress> nodes) {
         this.nodes = nodes;
     }
 

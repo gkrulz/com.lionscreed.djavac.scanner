@@ -4,12 +4,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.piranha.comm.CommunicationPipe;
 import com.piranha.compile.Compiler;
+import com.piranha.dist.Distributor;
 import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -25,14 +27,20 @@ public class Bootstrap {
 
         // Listening for other nodes to connect
         //----------------------------------------------------------------------
-//       CommunicationPipe communicationPipe = new CommunicationPipe(9005);
-//
-//        communicationPipe.start();
-//        while (true) {
-//            if (communicationPipe.getNodes().size() > 0) {
-//                break;
-//            }
-//        }
+       CommunicationPipe communicationPipe = new CommunicationPipe(9005);
+
+        communicationPipe.start();
+        while (true) {
+            if (communicationPipe.getNodes().size() > 1) {
+                break;
+            }
+
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                log.error("Error", e);
+            }
+        }
         //----------------------------------------------------------------------
 
         Scanner scanner = new Scanner();
@@ -56,26 +64,33 @@ public class Bootstrap {
         Scheduler scheduler = new Scheduler();
         ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
 
-        //compilation test
-        Compiler compiler = new Compiler("/Users/Padmaka/Desktop");
-
-        for (ArrayList<JsonObject> currentRound : schedule) {
-            for (JsonObject currentClass : currentRound) {
-                StringBuilder packageName = new StringBuilder(currentClass.get("package").getAsString());
-                StringBuilder classString = new StringBuilder("package " + packageName.replace(packageName.length()-1, packageName.length(), "") + ";\n");
-
-                for (JsonElement importStatement : currentClass.get("importStatements").getAsJsonArray()) {
-                    classString.append("import " + importStatement.getAsString() + ";\n");
-                }
-                classString.append(currentClass.get("classDeclaration").getAsString());
-                classString.append(currentClass.get("classString").getAsString() + "}");
-                try {
-                    compiler.compile(currentClass.get("className").getAsString(), classString.toString());
-                } catch (Exception e) {
-                    log.error("", e);
-                }
-//                log.debug(classString);
-            }
+        Distributor distributor = new Distributor();
+        try {
+            distributor.distribute(communicationPipe.getNodes(), schedule);
+        } catch (SocketException e) {
+            log.error("Error", e);
         }
+
+        //compilation test
+//        Compiler compiler = new Compiler("/Users/Padmaka/Desktop");
+//
+//        for (ArrayList<JsonObject> currentRound : schedule) {
+//            for (JsonObject currentClass : currentRound) {
+//                StringBuilder packageName = new StringBuilder(currentClass.get("package").getAsString());
+//                StringBuilder classString = new StringBuilder("package " + packageName.replace(packageName.length()-1, packageName.length(), "") + ";\n");
+//
+//                for (JsonElement importStatement : currentClass.get("importStatements").getAsJsonArray()) {
+//                    classString.append("import " + importStatement.getAsString() + ";\n");
+//                }
+//                classString.append(currentClass.get("classDeclaration").getAsString());
+//                classString.append(currentClass.get("classString").getAsString() + "}");
+//                try {
+//                    compiler.compile(currentClass.get("className").getAsString(), classString.toString());
+//                } catch (Exception e) {
+//                    log.error("", e);
+//                }
+////                log.debug(classString);
+//            }
+//        }
     }
 }
