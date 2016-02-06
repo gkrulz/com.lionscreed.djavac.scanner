@@ -1,12 +1,13 @@
 package com.piranha.comm;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.internal.Streams;
 import org.apache.log4j.Logger;
+import org.apache.log4j.varia.StringMatchFilter;
 
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
@@ -15,7 +16,7 @@ import java.util.ArrayList;
  */
 public class CommunicationPipe extends Thread{
     private static final Logger log = Logger.getLogger(CommunicationPipe.class);
-    private ArrayList<SocketAddress> nodes = new ArrayList<>();
+    private ArrayList<String> nodes = new ArrayList<>();
     private int portNo;
 
     public CommunicationPipe(int portNo) {
@@ -38,15 +39,17 @@ public class CommunicationPipe extends Thread{
                 Socket socket = serverSocket.accept();
                 DataInputStream inputStream = new DataInputStream(socket.getInputStream());
 
-                SocketAddress ipAddress = socket.getRemoteSocketAddress();
-                log.debug(ipAddress);
+                InetSocketAddress ipAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
+                InetAddress inetAddress = ipAddress.getAddress();
+
+                log.debug(inetAddress.getHostAddress());
 
                 ServerSocket nodeCommLine = new ServerSocket(0);
                 JsonObject portInfo = new JsonObject();
 
                 portInfo.addProperty("portNo", nodeCommLine.getLocalPort());
-                this.writeToOutputStream(socket, portInfo);
-                nodes.add(ipAddress);
+                this.writeToSocket(socket, portInfo);
+                nodes.add(inetAddress.getHostAddress());
                 log.debug("Node at " + nodeCommLine.getLocalPort() + " added");
 
 
@@ -57,15 +60,15 @@ public class CommunicationPipe extends Thread{
         }
     }
 
-    public ArrayList<SocketAddress> getNodes() {
+    public ArrayList<String> getNodes() {
         return nodes;
     }
 
-    public void setNodes(ArrayList<SocketAddress> nodes) {
+    public void setNodes(ArrayList<String> nodes) {
         this.nodes = nodes;
     }
 
-    public void writeToOutputStream (Socket socket, JsonObject data) throws IOException {
+    public void writeToSocket(Socket socket, JsonElement data) throws IOException {
         OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         out.write(data.toString());
         out.flush();

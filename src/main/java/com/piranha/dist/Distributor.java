@@ -1,11 +1,16 @@
 package com.piranha.dist;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.piranha.comm.CommunicationPipe;
 import org.apache.log4j.Logger;
 
-import java.net.SocketAddress;
+import java.io.IOException;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -13,9 +18,15 @@ import java.util.List;
  */
 public class Distributor {
     private static final Logger log = Logger.getLogger(Distributor.class);
+    private CommunicationPipe communicationPipe;
 
-    public void distribute(ArrayList<SocketAddress> nodes, ArrayList<ArrayList<JsonObject>> schedule) throws SocketException {
+    public Distributor (CommunicationPipe communicationPipe) {
+        this.communicationPipe = communicationPipe;
+    }
+
+    public ArrayList<ArrayList<List<JsonObject>>> makeDistributionPlan(ArrayList<ArrayList<JsonObject>> schedule) throws SocketException {
         ArrayList<ArrayList<List<JsonObject>>> distributionPlan = new ArrayList<>();
+        ArrayList<String> nodes = this.communicationPipe.getNodes();
 
         for (ArrayList<JsonObject> round : schedule) {
             int noOfClassesPerNode = (round.size() / nodes.size()) == 0 ? 1 : round.size() / nodes.size();
@@ -48,5 +59,53 @@ public class Distributor {
         }
 
         log.debug(distributionPlan);
+        return distributionPlan;
+    }
+
+    public void distribute (ArrayList<ArrayList<List<JsonObject>>> distributionPlan) throws IOException {
+        int noOfNodes = this.communicationPipe.getNodes().size();
+        Gson gson = new Gson();
+        JsonParser parser = new JsonParser();
+        HashMap<String, String> dependencyMap = new HashMap<>();
+
+        for (ArrayList<List<JsonObject>> round : distributionPlan) {
+            int noOfIterations = 0;
+
+            if (round.size() > noOfNodes) {
+                noOfIterations = noOfNodes;
+            } else if (round.size() < noOfNodes) {
+                noOfIterations = round.size();
+            } else {
+                noOfIterations = noOfNodes;
+            }
+
+            for (int i = 0; i < noOfIterations; i++) {
+
+                if (i == (noOfNodes - 1) && round.size() > noOfNodes) {
+                    round.get(i).addAll(round.get(i + 1));
+                }
+
+                String ipAddress = this.communicationPipe.getNodes().get(i);
+                log.debug(ipAddress);
+                Socket socket = new Socket(ipAddress, 9006);
+                this.communicationPipe.writeToSocket(socket, parser.parse(gson.toJson(round.get(i))));
+                socket.close();
+
+                for (JsonObject classJson : round.get(i)) {
+                    dependencyMap.put(classJson.get("absoluteClassName").getAsString(), ipAddress);
+                }
+
+                log.debug(round.get(i));
+            }
+
+            JsonObject dependencyMapJson = new JsonObject();
+            dependencyMapJson.addProperty("op", "dependencyMap");
+            dependencyMapJson.addProperty("message", gson.toJson(dependencyMap));
+            for (String nodeIp : this.communicationPipe.getNodes()) {
+                Socket socket = new Socket(nodeIp, 9006);
+                this.communicationPipe.writeToSocket(socket, dependencyMapJson);
+                socket.close();
+            }
+        }
     }
 }

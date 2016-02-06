@@ -1,9 +1,7 @@
 package com.piranha;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.piranha.comm.CommunicationPipe;
-import com.piranha.compile.Compiler;
 import com.piranha.dist.Distributor;
 import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
@@ -14,6 +12,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by Padmaka on 8/25/2015.
@@ -64,10 +63,18 @@ public class Bootstrap {
         Scheduler scheduler = new Scheduler();
         ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
 
-        Distributor distributor = new Distributor();
+        ArrayList<ArrayList<List<JsonObject>>> distributionPlan = new ArrayList<>();
+
+        Distributor distributor = new Distributor(communicationPipe);
         try {
-            distributor.distribute(communicationPipe.getNodes(), schedule);
+            distributionPlan = distributor.makeDistributionPlan(schedule);
         } catch (SocketException e) {
+            log.error("Error", e);
+        }
+
+        try {
+            distributor.distribute(distributionPlan);
+        } catch (IOException e) {
             log.error("Error", e);
         }
 
