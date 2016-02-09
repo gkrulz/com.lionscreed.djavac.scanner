@@ -1,6 +1,11 @@
 package com.piranha.scan;
 
 import com.google.gson.*;
+import com.google.gson.internal.Streams;
+import com.google.gson.internal.bind.ArrayTypeAdapter;
+import com.google.gson.internal.bind.JsonAdapterAnnotationTypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.sun.xml.internal.messaging.saaj.util.FinalArrayList;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -10,6 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +37,7 @@ public class Scanner {
 
     /***
      * The method to read all the files found in the default location and input them to the system.
+     *
      * @return collection of all the files found in the given location.
      */
     public Collection readFiles() {
@@ -40,6 +47,7 @@ public class Scanner {
 
     /***
      * The method to read all the files found in the given location and input them to the system.
+     *
      * @param path
      * @return collection of all the files found in the given location.
      */
@@ -50,6 +58,7 @@ public class Scanner {
 
     /***
      * The method to scan through all the source files found and find classes, interfaces, enums and inner classes.
+     *
      * @param files file list
      * @return a Json containing a list of all the classes, interfaces, enums and their details.
      * @throws IOException
@@ -100,11 +109,57 @@ public class Scanner {
 
 //        log.debug(gson.toJson(classes));
         detailedClassList = this.getFullClassList();
+
+        return classes;
+    }
+
+    public ArrayList<JsonObject> removeUnnecessaryImportStatements() {
+        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Gson gson = new Gson();
+        JsonParser parser = new JsonParser();
+
+        for (JsonObject classJson : classes) {
+            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+            ArrayList<String> importStatements = gson.fromJson(classJson.get("importStatements").getAsJsonArray(), listType);
+            ArrayList<Integer> removableIndexes = new ArrayList<>();
+
+            for (int i = 0; i < importStatements.size(); i++) {
+                String importStatement = importStatements.get(i);
+                boolean withinSourceCode = false;
+                boolean withinDependencies = false;
+
+                for (JsonObject classDetail : detailedClassList) {
+                    if (importStatement.contains(classDetail.get("packageName").getAsString())) {
+                        withinSourceCode = true;
+                    }
+                }
+
+                for (String dependency : dependencies) {
+                    String packageName = dependency.substring(0, dependency.lastIndexOf('.'));
+                    if (importStatement.contains(packageName)) {
+                        withinDependencies = true;
+                    }
+                }
+
+                if (withinSourceCode && !withinDependencies) {
+                    removableIndexes.add(i);
+//                    log.debug("class - " + classJson.get("absoluteClassName").getAsString() + " - " + importStatement);
+                }
+            }
+
+            for (int index : removableIndexes) {
+                importStatements.remove(index);
+            }
+
+            classJson.add("importStatements", parser.parse(gson.toJson(importStatements)));
+        }
+
         return classes;
     }
 
     /***
      * The method to find a class declaration in a given String
+     *
      * @param fileString File string
      * @return Json with class details
      */
@@ -139,6 +194,7 @@ public class Scanner {
 
     /***
      * The method to find all outer classes in a given .java file string.
+     *
      * @param file
      * @param className
      * @param fileString
@@ -149,7 +205,7 @@ public class Scanner {
                                  JsonArray importStatements) {
         String cleanedUpFileString = this.removeCommentsAndStrings(fileString);
 
-        String rootPath = System.getProperty("user.dir")+"/src/main/resources/";
+        String rootPath = System.getProperty("user.dir") + "/src/main/resources/";
 
         String classDeclaration = className;
 //        int endOfClass = 0;
@@ -218,6 +274,7 @@ public class Scanner {
 
     /***
      * The method to find all the names of inner classes in a given class body string
+     *
      * @param classString
      * @return List of strings containing the names of inner classes.
      */
@@ -227,7 +284,7 @@ public class Scanner {
         String classDeclaration = null;
         int end = 0;
 
-        while (innerClass != null){
+        while (innerClass != null) {
             innerClass = this.getClass(classString);
             if (innerClass != null) {
                 classDeclaration = innerClass.get("classDeclaration").getAsString();
@@ -256,12 +313,13 @@ public class Scanner {
 
     /***
      * The method to get a full list of names of the classes, interfaces, enums and inner classes with their details
-     * @return  list of Json objects with full list of all the classes, interfaces, enums, and inners classes along
-     *          with outer class name and package name.
+     *
+     * @return list of Json objects with full list of all the classes, interfaces, enums, and inners classes along
+     * with outer class name and package name.
      */
-    public ArrayList<JsonObject> getFullClassList(){
+    public ArrayList<JsonObject> getFullClassList() {
         ArrayList<JsonObject> classList = new ArrayList<>();
-        String rootPath = System.getProperty("user.dir")+"/src/main/resources/";
+        String rootPath = System.getProperty("user.dir") + "/src/main/resources/";
 
         for (JsonObject classJson : classes) {
             String packageName = classJson.get("filePath").getAsString().replace(rootPath, "");
@@ -274,8 +332,8 @@ public class Scanner {
             tempClassJson.addProperty("className", classJson.get("className").getAsString());
             tempClassJson.addProperty("outerClass", classJson.get("className").getAsString());
             classList.add(tempClassJson);
-            if(classJson.get("innerClasses").getAsJsonArray().size() > 0) {
-                for (JsonElement innerClass : classJson.get("innerClasses").getAsJsonArray()){
+            if (classJson.get("innerClasses").getAsJsonArray().size() > 0) {
+                for (JsonElement innerClass : classJson.get("innerClasses").getAsJsonArray()) {
                     JsonObject tempInnerClassJson = new JsonObject();
                     tempInnerClassJson.addProperty("packageName", packageName);
                     tempInnerClassJson.addProperty("className", innerClass.getAsString());
@@ -290,6 +348,7 @@ public class Scanner {
 
     /***
      * The method to find the import statements in a given .java file string.
+     *
      * @param fileString
      * @return Json array of all the import statements.
      */
@@ -312,6 +371,7 @@ public class Scanner {
 
     /***
      * The method to remove any comments or String literals in a given class string.
+     *
      * @param classString
      * @return class string without any comments or string literals.
      */
@@ -335,7 +395,7 @@ public class Scanner {
 //        return classString.replaceAll("((['\"])(?:(?!\\2|\\\\).|\\\\.)*\\2)|\\/\\/[^\\n]*|\\/\\*(?:[^*]|\\*(?!\\/))*\\*\\/", "");
     }
 
-    public String buildStringWithDots (int size) {
+    public String buildStringWithDots(int size) {
         StringBuilder str = new StringBuilder();
 
         for (int i = 0; i < size; i++) {
@@ -347,6 +407,7 @@ public class Scanner {
 
     /***
      * The method to find the dependencies for all the classes in the source code.
+     *
      * @return list of json objects which contain all class details along with dependencies.
      */
     public ArrayList<JsonObject> findDependencies() {
@@ -356,7 +417,7 @@ public class Scanner {
             String classDeclaration = classJson.get("classDeclaration").getAsString();
 
             //Getting the package name of the current class
-            String rootPath = System.getProperty("user.dir")+"/src/main/resources/";
+            String rootPath = System.getProperty("user.dir") + "/src/main/resources/";
             String classPackageName = classJson.get("filePath").getAsString().replace(rootPath, "");
             classPackageName = classPackageName.replace("/", ".");
             classPackageName = classPackageName.replace(classJson.get("file").getAsString(), "");
@@ -378,7 +439,7 @@ public class Scanner {
 
                 classDeclaration = classDeclaration.replace(className, "");
 
-                if (classDeclaration.contains(" "+checkingClassName)) {
+                if (classDeclaration.contains(" " + checkingClassName)) {
 
                     String matchingImportStatement = null;
                     ArrayList<String> importStatementsWithoutClassNames = new ArrayList<>();
@@ -459,7 +520,7 @@ public class Scanner {
                 }
 //                log.debug(cleanedUpClassString);
 //
-                if (cleanedUpClassString.contains(" "+checkingClassName)) {
+                if (cleanedUpClassString.contains(" " + checkingClassName)) {
 
                     String matchingImportStatement = null;
                     ArrayList<String> importStatementsWithoutClassNames = new ArrayList<>();
@@ -538,7 +599,6 @@ public class Scanner {
             }
         }
 
-        log.debug(classes);
         return classes;
     }
 

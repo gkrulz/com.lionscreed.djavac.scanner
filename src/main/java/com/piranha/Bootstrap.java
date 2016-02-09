@@ -26,20 +26,20 @@ public class Bootstrap {
 
         // Listening for other nodes to connect
         //----------------------------------------------------------------------
-       CommunicationPipe communicationPipe = new CommunicationPipe(9005);
-
-        communicationPipe.start();
-        while (true) {
-            if (communicationPipe.getNodes().size() > 1) {
-                break;
-            }
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                log.error("Error", e);
-            }
-        }
+//       CommunicationPipe communicationPipe = new CommunicationPipe(9005);
+//
+//        communicationPipe.start();
+//        while (true) {
+//            if (communicationPipe.getNodes().size() > 1) {
+//                break;
+//            }
+//
+//            try {
+//                Thread.sleep(10);
+//            } catch (InterruptedException e) {
+//                log.error("Error", e);
+//            }
+//        }
         //----------------------------------------------------------------------
 
         Scanner scanner = new Scanner();
@@ -60,23 +60,35 @@ public class Bootstrap {
         classes = scanner.findDependencies();
         detailedClassList = scanner.getDetailedClassList();
 
+        log.debug(classes);
+
+        classes = scanner.removeUnnecessaryImportStatements();
+
+        log.debug(classes);
+
         Scheduler scheduler = new Scheduler();
         ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
 
         ArrayList<ArrayList<List<JsonObject>>> distributionPlan = new ArrayList<>();
 
-        Distributor distributor = new Distributor(communicationPipe);
-        try {
-            distributionPlan = distributor.makeDistributionPlan(schedule);
-        } catch (SocketException e) {
-            log.error("Error", e);
-        }
+//        Distributor distributor = new Distributor(communicationPipe);
+//        try {
+//            distributionPlan = distributor.makeDistributionPlan(schedule);
+//        } catch (SocketException e) {
+//            log.error("Error", e);
+//        }
+//
+//        try {
+//            Thread.sleep(30);
+//        } catch (InterruptedException e) {
+//            log.error("Error", e);
+//        }
 
-        try {
-            distributor.distribute(distributionPlan);
-        } catch (IOException e) {
-            log.error("Error", e);
-        }
+//        try {
+//            distributor.distribute(distributionPlan);
+//        } catch (IOException e) {
+//            log.error("Error", e);
+//        }
 
         //compilation test
 //        Compiler compiler = new Compiler("/Users/Padmaka/Desktop");

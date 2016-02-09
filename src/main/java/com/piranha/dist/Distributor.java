@@ -7,6 +7,7 @@ import com.piranha.comm.CommunicationPipe;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ public class Distributor {
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
         HashMap<String, String> dependencyMap = new HashMap<>();
+        int x = 0;
 
         for (ArrayList<List<JsonObject>> round : distributionPlan) {
             int noOfIterations = 0;
@@ -92,6 +94,11 @@ public class Distributor {
                 socket.close();
 
                 for (JsonObject classJson : round.get(i)) {
+                    if (ipAddress.equals("127.0.0.1")) {
+                        InetAddress networkIpAddress = InetAddress.getLocalHost();
+                        ipAddress = networkIpAddress.getHostAddress();
+                    }
+
                     dependencyMap.put(classJson.get("absoluteClassName").getAsString(), ipAddress);
                 }
 
@@ -106,6 +113,11 @@ public class Distributor {
                 this.communicationPipe.writeToSocket(socket, dependencyMapJson);
                 socket.close();
             }
+
+//            if (x == 1) {
+//                break;
+//            }
+            x++;
         }
     }
 }

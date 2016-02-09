@@ -6,22 +6,25 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by Padmaka on 1/26/16.
  */
 public class Compiler {
     private static final Logger log = Logger.getLogger(Compiler.class);
-    private String classPath;
+    Properties properties;
 
-    public Compiler (String classPath) {
-        this.classPath = classPath;
+    public Compiler (String classPath) throws IOException {
+        properties = new Properties();
+        properties.load(Compiler.class.getClassLoader().getResourceAsStream("config.properties"));
     }
 
     public void compile(String className, String classString) throws Exception {
@@ -39,14 +42,14 @@ public class Compiler {
 
         List<String> options = new ArrayList<>();
         options.add("-d");
-        options.add(this.classPath);
+        options.add(properties.getProperty("DESTINATION_PATH"));
         options.add( "-classpath");
         URLClassLoader urlClassLoader = (URLClassLoader)Thread.currentThread().getContextClassLoader();
         StringBuilder sb = new StringBuilder();
         for (URL url : urlClassLoader.getURLs()) {
             sb.append(url.getFile()).append(File.pathSeparator);
         }
-        sb.append(this.classPath);
+        sb.append(properties.getProperty("CLASSPATH"));
         options.add(sb.toString());
 
         StringWriter output = new StringWriter();
