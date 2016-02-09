@@ -3,6 +3,7 @@ package com.piranha.comm;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.internal.Streams;
+import com.piranha.util.Communication;
 import org.apache.log4j.Logger;
 import org.apache.log4j.varia.StringMatchFilter;
 
@@ -25,7 +26,9 @@ public class CommunicationPipe extends Thread{
 
     @Override
     public void run() {
+        Communication comm = new Communication();
         ServerSocket serverSocket = null;
+
         try {
             serverSocket = new ServerSocket(this.portNo);
         } catch (IOException e) {
@@ -48,7 +51,7 @@ public class CommunicationPipe extends Thread{
                 JsonObject portInfo = new JsonObject();
 
                 portInfo.addProperty("portNo", nodeCommLine.getLocalPort());
-                this.writeToSocket(socket, portInfo);
+                comm.writeToSocket(socket, portInfo);
                 nodes.add(inetAddress.getHostAddress());
                 log.debug("Node at " + nodeCommLine.getLocalPort() + " added");
 
@@ -66,15 +69,5 @@ public class CommunicationPipe extends Thread{
 
     public void setNodes(ArrayList<String> nodes) {
         this.nodes = nodes;
-    }
-
-    public void writeToSocket(Socket socket, JsonElement data) throws IOException {
-//        OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
-//        out.write(data.toString());
-//        out.flush();
-//        out.close();
-
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-        out.println(data.toString());
     }
 }

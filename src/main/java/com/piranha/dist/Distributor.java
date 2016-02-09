@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.piranha.comm.CommunicationPipe;
+import com.piranha.util.Communication;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -20,9 +21,11 @@ import java.util.List;
 public class Distributor {
     private static final Logger log = Logger.getLogger(Distributor.class);
     private CommunicationPipe communicationPipe;
+    private Communication comm;
 
     public Distributor (CommunicationPipe communicationPipe) {
         this.communicationPipe = communicationPipe;
+        this.comm = new Communication();
     }
 
     public ArrayList<ArrayList<List<JsonObject>>> makeDistributionPlan(ArrayList<ArrayList<JsonObject>> schedule) throws SocketException {
@@ -90,7 +93,7 @@ public class Distributor {
                 String ipAddress = this.communicationPipe.getNodes().get(i);
                 log.debug(ipAddress);
                 Socket socket = new Socket(ipAddress, 9006);
-                this.communicationPipe.writeToSocket(socket, parser.parse(gson.toJson(round.get(i))));
+                this.comm.writeToSocket(socket, parser.parse(gson.toJson(round.get(i))));
                 socket.close();
 
                 for (JsonObject classJson : round.get(i)) {
@@ -110,7 +113,7 @@ public class Distributor {
             dependencyMapJson.addProperty("message", gson.toJson(dependencyMap));
             for (String nodeIp : this.communicationPipe.getNodes()) {
                 Socket socket = new Socket(nodeIp, 9006);
-                this.communicationPipe.writeToSocket(socket, dependencyMapJson);
+                this.comm.writeToSocket(socket, dependencyMapJson);
                 socket.close();
             }
 
