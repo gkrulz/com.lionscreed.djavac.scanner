@@ -62,11 +62,7 @@ public class Bootstrap {
         classes = scanner.findDependencies();
         detailedClassList = scanner.getDetailedClassList();
 
-        log.debug(classes);
-
         classes = scanner.removeUnnecessaryImportStatements();
-
-        log.debug(classes);
 
         Scheduler scheduler = new Scheduler();
         ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
@@ -81,7 +77,7 @@ public class Bootstrap {
         }
 
         try {
-            Thread.sleep(30);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             log.error("Error", e);
         }

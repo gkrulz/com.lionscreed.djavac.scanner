@@ -38,15 +38,18 @@ public class Scheduler {
 
                         if (compiledClasses.contains(dependency.getAsString())) {
                             isDependencyFree = true;
-                        }
-
-                        if (compiledClasses.contains(classJson.get("absoluteClassName").getAsString())) {
+                        }else {
                             isDependencyFree = false;
                         }
+
 
                         if (!isDependencyFree) {
                             break;
                         }
+                    }
+
+                    if (compiledClasses.contains(classJson.get("absoluteClassName").getAsString())) {
+                        isDependencyFree = false;
                     }
                 }
 

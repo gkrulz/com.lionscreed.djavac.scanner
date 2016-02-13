@@ -1,11 +1,7 @@
 package com.piranha.scan;
 
 import com.google.gson.*;
-import com.google.gson.internal.Streams;
-import com.google.gson.internal.bind.ArrayTypeAdapter;
-import com.google.gson.internal.bind.JsonAdapterAnnotationTypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
-import com.sun.xml.internal.messaging.saaj.util.FinalArrayList;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -599,7 +595,136 @@ public class Scanner {
             }
         }
 
+        this.findInheritanceTreeDependencies();
+
+        this.addInheritedClassesToDependencies();
+
         return classes;
+    }
+
+    private void findInheritanceTreeDependencies (/*ArrayList<String> inheritanceTreeDependencies*/) {
+        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Gson gson = new Gson();
+        JsonParser parser = new JsonParser();
+
+        for (JsonObject classJson : classes) {
+            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+            ArrayList<String> importStatements = gson.fromJson(classJson.get("importStatements").getAsJsonArray(), listType);
+            String classDeclaration = classJson.get("classDeclaration").getAsString();
+            ArrayList<String> declarationDependencyNames = this.findInheritedClasses(classDeclaration);
+            ArrayList<String> declarationDependencyFullNames = new ArrayList<>();
+
+//            log.debug(classJson.get("absoluteClassName").getAsString() + " - " + declarationDependencyNames);
+
+            for (int i = 0; i < declarationDependencyNames.size(); i++) {
+                String declarationDependencyName = declarationDependencyNames.get(i);
+                ArrayList<String> importStatementsWithoutClassNames = new ArrayList<>();
+                boolean foundDependency = false;
+
+                for (String importStatement : importStatements) {
+                    if (importStatement.equals(declarationDependencyName)) {
+                        declarationDependencyFullNames.add(importStatement);
+                        foundDependency = true;
+                        break;
+                    } else if (importStatement.matches("(\\w+\\.)*" + declarationDependencyName + "$")) {
+                        declarationDependencyFullNames.add(importStatement);
+                        foundDependency = true;
+                        break;
+                    } else if (importStatement.matches("(\\w+\\.)*\\*$")) {
+                        importStatementsWithoutClassNames.add(importStatement);
+                    }
+                }
+
+                if (foundDependency == false) {
+                    for (String importStatementWithoutClassName : importStatementsWithoutClassNames) {
+                        for (JsonObject classDetails : detailedClassList) {
+                            String declarationDependency = importStatementWithoutClassName.replace("*", "")
+                                    + declarationDependencyName;
+                            String checkingClassName = classDetails.get("packageName").getAsString()
+                                    + classDetails.get("className");
+
+                            if (declarationDependency.equals(checkingClassName)) {
+                                declarationDependencyFullNames.add(checkingClassName);
+                                foundDependency = true;
+                            }
+                        }
+                    }
+                }
+
+                if (foundDependency == false) {
+                    for (JsonObject classDetails : detailedClassList) {
+                        String checkingClass = classDetails.get("packageName").getAsString()
+                                + classDetails.get("className").getAsString();
+
+                        String dependencyName = classJson.get("package").getAsString() + declarationDependencyName;
+
+                        if (dependencyName.equals(checkingClass)) {
+                            declarationDependencyFullNames.add(checkingClass);
+                        }
+                    }
+                }
+            }
+
+            JsonArray superClasses = parser.parse(gson.toJson(declarationDependencyFullNames)).getAsJsonArray();
+            classJson.add("superClasses", superClasses);
+            log.debug(declarationDependencyFullNames);
+        }
+    }
+
+    private void addInheritedClassesToDependencies () {
+        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Gson gson = new Gson();
+        JsonParser parser = new JsonParser();
+
+        for (JsonObject classJson : classes) {
+            HashSet<String> completeDependencyList = new HashSet<>();
+
+            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+
+            for (String dependency : dependencies) {
+                this.findInheritedDependencies(completeDependencyList, dependency);
+            }
+
+            completeDependencyList.addAll(dependencies);
+            JsonArray newDependencyList = parser.parse(gson.toJson(completeDependencyList)).getAsJsonArray();
+            classJson.add("dependencies", newDependencyList);
+            log.debug(classJson.get("absoluteClassName").getAsString() + " - " + completeDependencyList);
+        }
+    }
+
+    public void findInheritedDependencies (HashSet<String> completeDependencyList, String dependency) {
+        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Gson gson = new Gson();
+
+        for (JsonObject classJson : classes) {
+            String className = classJson.get("absoluteClassName").getAsString();
+            ArrayList<String> superClasses = gson.fromJson(classJson.get("superClasses").getAsJsonArray(), listType);
+
+            if (className.equals(dependency) && superClasses.size() > 0) {
+                completeDependencyList.addAll(superClasses);
+
+                for (String superClass : superClasses) {
+                    this.findInheritedDependencies(completeDependencyList, superClass);
+                }
+            }
+        }
+    }
+
+    public ArrayList<String> findInheritedClasses(String classDeclaration) {
+        ArrayList<String> dependencyNames = new ArrayList<>();
+        StringBuilder result = new StringBuilder();
+        Pattern pattern = Pattern.compile("(extends\\s+((\\w+\\.)*)?\\w+\\s*(,\\s*\\w+\\s*)*)|(implements\\s+((\\w+\\.)*)?\\w+\\s*(,\\s*((\\w+\\.)*)?\\w+\\s*)*)");
+        Matcher matcher = pattern.matcher(classDeclaration);
+
+        while (matcher.find()) {
+            String match = matcher.group().replace("extends", "").replace("implements", "");
+            String[] classNames = match.split(",");
+            for (String className : classNames) {
+                dependencyNames.add(className.trim());
+            }
+        }
+
+        return dependencyNames;
     }
 
     public ArrayList<JsonObject> getDetailedClassList() {

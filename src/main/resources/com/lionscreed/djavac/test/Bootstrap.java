@@ -5,7 +5,7 @@ import com.lionscreed.djavac.acomp.*;
 /**
  * Created by Padmaka on 8/27/2015.
  */
-public class Bootstrap extends Compiler implements Stopable {
+public class Bootstrap extends CompilerX implements Stopable {
 
     /* This is
      a comment */

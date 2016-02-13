@@ -93,7 +93,13 @@ public class Distributor {
                 String ipAddress = this.communicationPipe.getNodes().get(i);
                 log.debug(ipAddress);
                 Socket socket = new Socket(ipAddress, 9006);
-                this.comm.writeToSocket(socket, parser.parse(gson.toJson(round.get(i))));
+
+                JsonObject compilationWorkloadJson = new JsonObject();
+                compilationWorkloadJson.addProperty("op", "COMPILATION");
+                compilationWorkloadJson.addProperty("classes", gson.toJson(round.get(i)));
+                compilationWorkloadJson.addProperty("dependencyMap", gson.toJson(dependencyMap));
+
+                this.comm.writeToSocket(socket, compilationWorkloadJson);
                 socket.close();
 
                 for (JsonObject classJson : round.get(i)) {
@@ -108,14 +114,14 @@ public class Distributor {
                 log.debug(round.get(i));
             }
 
-            JsonObject dependencyMapJson = new JsonObject();
-            dependencyMapJson.addProperty("op", "dependencyMap");
-            dependencyMapJson.addProperty("message", gson.toJson(dependencyMap));
-            for (String nodeIp : this.communicationPipe.getNodes()) {
-                Socket socket = new Socket(nodeIp, 9006);
-                this.comm.writeToSocket(socket, dependencyMapJson);
-                socket.close();
-            }
+//            JsonObject dependencyMapJson = new JsonObject();
+//            dependencyMapJson.addProperty("op", "dependencyMap");
+//            dependencyMapJson.addProperty("message", gson.toJson(dependencyMap));
+//            for (String nodeIp : this.communicationPipe.getNodes()) {
+//                Socket socket = new Socket(nodeIp, 9006);
+//                this.comm.writeToSocket(socket, dependencyMapJson);
+//                socket.close();
+//            }
 
 //            if (x == 1) {
 //                break;
