@@ -2,6 +2,7 @@ package com.piranha.scan;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import com.piranha.util.Constants;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -37,7 +38,7 @@ public class Scanner {
      * @return collection of all the files found in the given location.
      */
     public Collection readFiles() {
-        File file = new File(System.getProperty("user.dir") + "/src/main/resources");
+        File file = new File(Constants.SOURCE_PATH);
         return FileUtils.listFiles(file, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
     }
 
@@ -201,7 +202,7 @@ public class Scanner {
                                  JsonArray importStatements) {
         String cleanedUpFileString = this.removeCommentsAndStrings(fileString);
 
-        String rootPath = System.getProperty("user.dir") + "/src/main/resources/";
+        String rootPath = Constants.SOURCE_PATH + Constants.PATH_SEPARATOR;
 
         String classDeclaration = className;
 //        int endOfClass = 0;
@@ -315,7 +316,7 @@ public class Scanner {
      */
     public ArrayList<JsonObject> getFullClassList() {
         ArrayList<JsonObject> classList = new ArrayList<>();
-        String rootPath = System.getProperty("user.dir") + "/src/main/resources/";
+        String rootPath = Constants.SOURCE_PATH + Constants.PATH_SEPARATOR;
 
         for (JsonObject classJson : classes) {
             String packageName = classJson.get("filePath").getAsString().replace(rootPath, "");
@@ -413,7 +414,7 @@ public class Scanner {
             String classDeclaration = classJson.get("classDeclaration").getAsString();
 
             //Getting the package name of the current class
-            String rootPath = System.getProperty("user.dir") + "/src/main/resources/";
+            String rootPath = Constants.SOURCE_PATH + Constants.PATH_SEPARATOR;
             String classPackageName = classJson.get("filePath").getAsString().replace(rootPath, "");
             classPackageName = classPackageName.replace("/", ".");
             classPackageName = classPackageName.replace(classJson.get("file").getAsString(), "");
@@ -675,6 +676,11 @@ public class Scanner {
         Type listType = new TypeToken<ArrayList<String>>() {}.getType();
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
+        ArrayList<String> classNames = new ArrayList<>();
+
+        for (JsonObject classJson: classes) {
+            classNames.add(classJson.get("absoluteClassName").getAsString());
+        }
 
         for (JsonObject classJson : classes) {
             HashSet<String> completeDependencyList = new HashSet<>();
@@ -682,7 +688,7 @@ public class Scanner {
             ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
 
             for (String dependency : dependencies) {
-                this.findInheritedDependencies(completeDependencyList, dependency);
+                this.findInheritedDependencies(completeDependencyList, dependency, classNames);
             }
 
             completeDependencyList.addAll(dependencies);
@@ -692,7 +698,7 @@ public class Scanner {
         }
     }
 
-    public void findInheritedDependencies (HashSet<String> completeDependencyList, String dependency) {
+    public void findInheritedDependencies(HashSet<String> completeDependencyList, String dependency, ArrayList<String> classNames) {
         Type listType = new TypeToken<ArrayList<String>>() {}.getType();
         Gson gson = new Gson();
 
@@ -701,10 +707,13 @@ public class Scanner {
             ArrayList<String> superClasses = gson.fromJson(classJson.get("superClasses").getAsJsonArray(), listType);
 
             if (className.equals(dependency) && superClasses.size() > 0) {
-                completeDependencyList.addAll(superClasses);
+//                completeDependencyList.addAll(superClasses);
 
                 for (String superClass : superClasses) {
-                    this.findInheritedDependencies(completeDependencyList, superClass);
+                    if (classNames.contains(superClass)) {
+                        this.findInheritedDependencies(completeDependencyList, superClass, classNames);
+                        completeDependencyList.add(superClass);
+                    }
                 }
             }
         }
