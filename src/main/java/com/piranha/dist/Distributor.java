@@ -66,6 +66,11 @@ public class Distributor {
         return distributionPlan;
     }
 
+    /***
+     * The method to distribute classes for compilation
+     * @param distributionPlan
+     * @throws IOException
+     */
     public void distribute (ArrayList<ArrayList<List<JsonObject>>> distributionPlan) throws IOException {
         int noOfNodes = this.communicationPipe.getNodes().size();
         Gson gson = new Gson();
