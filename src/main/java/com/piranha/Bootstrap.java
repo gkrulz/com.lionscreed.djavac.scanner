@@ -1,12 +1,10 @@
 package com.piranha;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.piranha.comm.CommunicationPipe;
 import com.piranha.dist.Distributor;
 import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
-import com.piranha.util.Communication;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -87,27 +85,5 @@ public class Bootstrap {
         } catch (IOException e) {
             log.error("Error", e);
         }
-
-        //compilation test
-//        Compiler compiler = new Compiler("/Users/Padmaka/Desktop");
-//
-//        for (ArrayList<JsonObject> currentRound : schedule) {
-//            for (JsonObject currentClass : currentRound) {
-//                StringBuilder packageName = new StringBuilder(currentClass.get("package").getAsString());
-//                StringBuilder classString = new StringBuilder("package " + packageName.replace(packageName.length()-1, packageName.length(), "") + ";\n");
-//
-//                for (JsonElement importStatement : currentClass.get("importStatements").getAsJsonArray()) {
-//                    classString.append("import " + importStatement.getAsString() + ";\n");
-//                }
-//                classString.append(currentClass.get("classDeclaration").getAsString());
-//                classString.append(currentClass.get("classString").getAsString() + "}");
-//                try {
-//                    compiler.compile(currentClass.get("className").getAsString(), classString.toString());
-//                } catch (Exception e) {
-//                    log.error("", e);
-//                }
-////                log.debug(classString);
-//            }
-//        }
     }
 }

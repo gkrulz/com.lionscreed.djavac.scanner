@@ -118,20 +118,19 @@ public class Distributor {
 
                 log.debug(round.get(i));
             }
-
-//            JsonObject dependencyMapJson = new JsonObject();
-//            dependencyMapJson.addProperty("op", "dependencyMap");
-//            dependencyMapJson.addProperty("message", gson.toJson(dependencyMap));
-//            for (String nodeIp : this.communicationPipe.getNodes()) {
-//                Socket socket = new Socket(nodeIp, 9006);
-//                this.comm.writeToSocket(socket, dependencyMapJson);
-//                socket.close();
-//            }
-
-//            if (x == 1) {
-//                break;
-//            }
             x++;
+        }
+
+        //Send the compilation termination message
+        JsonObject terminationMessage = new JsonObject();
+
+        terminationMessage.addProperty("op", "TERMINATE");
+        terminationMessage.addProperty("classes", gson.toJson(dependencyMap));
+
+        for (String ipAddress : this.communicationPipe.getNodes()) {
+            Socket socket = new Socket(ipAddress, 9006);
+            this.comm.writeToSocket(socket, terminationMessage);
+            log.debug(gson.toJson(terminationMessage));
         }
     }
 }
