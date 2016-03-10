@@ -1,23 +1,20 @@
 package com.piranha.compile;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.piranha.comm.CommunicationPipe;
-import com.piranha.dist.Distributor;
+import com.google.gson.reflect.TypeToken;
 import com.piranha.dist.Scheduler;
-import com.piranha.scan.Scanner;
 import com.piranha.scan.ScannerX;
-import com.piranha.scan.test.ConcurrentHashmapTest;
 import com.piranha.util.Constants;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.SocketException;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -59,7 +56,7 @@ public class LocalCompiler {
 
 
 
-        log.debug(gson.toJson(classes));
+//        log.debug(gson.toJson(classes));
 
         long endTime = System.nanoTime();
 
@@ -68,10 +65,37 @@ public class LocalCompiler {
         double seconds = (double)timeTaken / 1000000000.0;
         log.info(seconds + "s");
 
-//        Scheduler scheduler = new Scheduler();
+        Scheduler scheduler = new Scheduler();
 //        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
+
+        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeScheduleTemp(classes);
 //
-//        //compilation test
+//        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+//
+//        for (JsonObject classJson : classes.values()){
+//            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+//            String className = classJson.get("absoluteClassName").getAsString();
+//
+//            for (String dependency : dependencies) {
+//
+//                if (classes.get(dependency) != null) {
+//                    JsonObject dependencyClassObj = classes.get(dependency).getAsJsonObject();
+//                    String dependencyClassName = dependencyClassObj.get("absoluteClassName").getAsString();
+//                    ArrayList<String> dependencyList = gson.fromJson(dependencyClassObj.get("dependencies").getAsJsonArray(), listType);
+//
+//                    if (dependencyList.contains(className)) {
+//                        log.debug(className + " dependency - " + dependencyClassName);
+//                        break;
+//                    }
+//
+//                } else if (classes.get(dependency) == null){
+//                    log.debug("dependency not in classes - " + dependency + " for - " + className);
+//                }
+//            }
+//        }
+
+
+        //compilation test
 //        Compiler compiler = null;
 //        try {
 //            compiler = new Compiler(Constants.DESTINATION_PATH);
@@ -79,7 +103,7 @@ public class LocalCompiler {
 //            log.error("Unable to initialize compiler", e);
 //        }
 //
-//        long startTime = System.nanoTime();
+//        long startTime2 = System.nanoTime();
 //
 //        for (ArrayList<JsonObject> currentRound : schedule) {
 //            for (JsonObject currentClass : currentRound) {
@@ -100,11 +124,11 @@ public class LocalCompiler {
 //            }
 //        }
 //
-//        long endTime = System.nanoTime();
+//        long endTime2 = System.nanoTime();
 //
-//        long timeTaken = endTime - startTime;
+//        long timeTaken2 = endTime2 - startTime2;
 //
-//        double seconds = (double)timeTaken / 1000000000.0;
-//        log.info(seconds + "s");
+//        double seconds2 = (double)timeTaken2 / 1000000000.0;
+//        log.info(seconds2 + "s");
     }
 }

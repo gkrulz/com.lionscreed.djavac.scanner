@@ -8,7 +8,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
-import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -150,13 +149,14 @@ public class ScannerX {
      */
     public ConcurrentHashMap<String, JsonObject> removeUnnecessaryImportStatements() {
         Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {}.getType();
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
 
         for (JsonObject classJson : classes.values()) {
-            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+            ConcurrentHashMap<String, String> dependencies = gson.fromJson(classJson.get("dependencies").getAsString(), mapType);
             ArrayList<String> importStatements = gson.fromJson(classJson.get("importStatements").getAsJsonArray(), listType);
-            ArrayList<Integer> removableIndexes = new ArrayList<>();
+            ArrayList<String> removableIndexes = new ArrayList<>();
             ArrayList<String> importPackages = new ArrayList<>();
 
             for (String importStatement : importStatements) {
@@ -180,7 +180,7 @@ public class ScannerX {
 //                    }
 //                }
 
-                for (String dependency : dependencies) {
+                for (String dependency : dependencies.values()) {
                     String packageName = dependency.substring(0, dependency.lastIndexOf('.'));
                     if (importStatement.contains(packageName)) {
                         withinDependencies = true;
@@ -188,16 +188,24 @@ public class ScannerX {
                 }
 
                 if (withinSourceCode && !withinDependencies) {
-                    removableIndexes.add(i);
+                    removableIndexes.add(importStatements.get(i));
 //                    log.debug("class - " + classJson.get("absoluteClassName").getAsString() + " - " + importStatement);
                 }
             }
 
-            for (int index : removableIndexes) {
-                importStatements.remove(index);
+            HashMap<String, String> newImportStatements = new HashMap<>();
+
+            for (String importStatement : importStatements) {
+                newImportStatements.put(importStatement, importStatement);
             }
 
-            classJson.add("importStatements", parser.parse(gson.toJson(importStatements)));
+            for (String key : removableIndexes) {
+//                log.debug(classJson.get("absoluteClassName").getAsString() + " - " + newImportStatements);
+
+                newImportStatements.remove(key);
+            }
+
+            classJson.add("importStatements", parser.parse(gson.toJson(newImportStatements.values())).getAsJsonArray());
         }
 
         return classes;
@@ -464,7 +472,7 @@ public class ScannerX {
     public ConcurrentHashMap<String, JsonObject> findDependencies() {
 
 
-        ExecutorService executorService = Executors.newFixedThreadPool(7);
+        ExecutorService executorService = Executors.newFixedThreadPool(8);
 
         int x = 0;
         for (JsonObject classJson : classes.values()) {
@@ -492,13 +500,13 @@ public class ScannerX {
     }
 
     private void findInheritanceTreeDependencies(/*ArrayList<String> inheritanceTreeDependencies*/) {
-        Type listType = new TypeToken<ArrayList<String>>() {
-        }.getType();
+        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
 
         for (JsonObject classJson : classes.values()) {
-            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+            ConcurrentHashMap<String, String> dependencies = gson.fromJson(classJson.get("dependencies").getAsString(), mapType);
             ArrayList<String> importStatements = gson.fromJson(classJson.get("importStatements").getAsJsonArray(), listType);
             String classDeclaration = classJson.get("classDeclaration").getAsString();
             ArrayList<String> declarationDependencyNames = this.findInheritedClasses(classDeclaration);
@@ -532,17 +540,22 @@ public class ScannerX {
 
                         log.debug(importPackage);
                         if (directory.get(importPackage) != null) {
-                            for (JsonObject classDetails : ((ConcurrentHashMap<String, JsonObject>) directory.get(importPackage)).values()) {
-                                String declarationDependency = importStatementWithoutClassName.replace("*", "")
-                                        + declarationDependencyName;
-                                String checkingClassName = classDetails.get("package").getAsString()
-                                        + classDetails.get("className");
+                            for (Object classDetailsObj : ((ConcurrentHashMap<String, JsonObject>) directory.get(importPackage)).values()) {
 
-                                if (declarationDependency.equals(checkingClassName)) {
-                                    declarationDependencyFullNames.add(checkingClassName);
-                                    foundDependency = true;
+                                if (classDetailsObj instanceof JsonObject) {
+
+                                    JsonObject classDetails = (JsonObject) classDetailsObj;
+                                    String declarationDependency = importStatementWithoutClassName.replace("*", "")
+                                            + declarationDependencyName;
+                                    String checkingClassName = classDetails.get("package").getAsString()
+                                            + classDetails.get("className");
+
+                                    if (declarationDependency.equals(checkingClassName)) {
+                                        declarationDependencyFullNames.add(checkingClassName);
+                                        foundDependency = true;
+                                    }
+
                                 }
-
                             }
                         }
 
@@ -579,8 +592,8 @@ public class ScannerX {
     }
 
     private void addInheritedClassesToDependencies() {
-        Type listType = new TypeToken<ArrayList<String>>() {
-        }.getType();
+        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {}.getType();
         Gson gson = new Gson();
         JsonParser parser = new JsonParser();
         ArrayList<String> classNames = new ArrayList<>();
@@ -590,22 +603,22 @@ public class ScannerX {
         }
 
         for (JsonObject classJson : classes.values()) {
-            HashSet<String> completeDependencyList = new HashSet<>();
+            ConcurrentHashMap<String, String> completeDependencyList = new ConcurrentHashMap<>();
 
-            ArrayList<String> dependencies = gson.fromJson(classJson.get("dependencies").getAsJsonArray(), listType);
+            ConcurrentHashMap<String, String> dependencies = gson.fromJson(classJson.get("dependencies").getAsString(), mapType);
 
-            for (String dependency : dependencies) {
+            for (String dependency : dependencies.values()) {
                 this.findInheritedDependencies(completeDependencyList, dependency, classNames);
             }
 
-            completeDependencyList.addAll(dependencies);
-            JsonArray newDependencyList = parser.parse(gson.toJson(completeDependencyList)).getAsJsonArray();
-            classJson.add("dependencies", newDependencyList);
-            log.debug(classJson.get("absoluteClassName").getAsString() + " - " + completeDependencyList);
+            completeDependencyList.putAll(dependencies);
+            String newDependencyList = gson.toJson(completeDependencyList);
+            classJson.addProperty("dependencies", newDependencyList);
+//            log.debug(classJson.get("absoluteClassName").getAsString() + " - " + completeDependencyList);
         }
     }
 
-    public void findInheritedDependencies(HashSet<String> completeDependencyList, String dependency, ArrayList<String> classNames) {
+    public void findInheritedDependencies(ConcurrentHashMap<String, String> completeDependencyList, String dependency, ArrayList<String> classNames) {
         Type listType = new TypeToken<ArrayList<String>>() {
         }.getType();
         Gson gson = new Gson();
@@ -620,7 +633,7 @@ public class ScannerX {
                 for (String superClass : superClasses) {
                     if (classNames.contains(superClass)) {
                         this.findInheritedDependencies(completeDependencyList, superClass, classNames);
-                        completeDependencyList.add(superClass);
+                        completeDependencyList.put(superClass, superClass);
                     }
                 }
             }

@@ -38,7 +38,7 @@ public class Compiler {
 
         JavaSourceFromString jsfs = new JavaSourceFromString( className, classString);
 
-        Iterable<? extends JavaFileObject> fileObjects = Arrays.asList( jsfs);
+        Iterable<? extends JavaFileObject> fileObjects = Arrays.asList(jsfs);
 
         List<String> options = new ArrayList<>();
         options.add("-d");

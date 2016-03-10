@@ -1,9 +1,6 @@
 package com.piranha.scan;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import org.apache.log4j.Logger;
 
@@ -13,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Padmaka on 2/22/16.
@@ -60,7 +58,7 @@ public class ScannerTask implements Runnable {
 
         ArrayList<String> importPackages = new ArrayList<>();
 
-        Set<String> dependencies = new HashSet<>();
+        ConcurrentHashMap<String, String> dependencies = new ConcurrentHashMap<>();
 
         ArrayList<String> dependencyCheckList = new ArrayList<>();
 
@@ -108,10 +106,10 @@ public class ScannerTask implements Runnable {
 
             if (checkingClass.contains(".")) {
 
-                //If the string contains dots then check in the directory
+                //If the string contains dots then check in the directory structure
                 if (scanner.getDirectory().find(checkingClass) != null) {
                     String dependencyClassName = scanner.getDirectory().find(checkingClass).get("absoluteClassName").getAsString();
-                    dependencies.add(dependencyClassName);
+                    dependencies.put(dependencyClassName, dependencyClassName);
                 }
 
 
@@ -119,7 +117,7 @@ public class ScannerTask implements Runnable {
                 //Check whether the potential dependency is in the class package
                 if (scanner.getClasses().get(classPackageName + checkingClass) != null) {
 
-                    dependencies.add(classPackageName + checkingClass);
+                    dependencies.put(classPackageName + checkingClass, classPackageName + checkingClass);
 
                 } else if (importStatements.size() > 0){
 
@@ -128,7 +126,7 @@ public class ScannerTask implements Runnable {
                         if (importStatementsMap.get(importPackage + checkingClass) != null &&
                                 scanner.getClasses().get(importPackage + checkingClass) != null) {
 
-                            dependencies.add(classPackageName + checkingClass);
+                            dependencies.put(importPackage + checkingClass, importPackage + checkingClass);
                         }
                     }
 
@@ -137,7 +135,7 @@ public class ScannerTask implements Runnable {
                     //Checking whether the potential dependency is in * import packages
                     for (String starImportPackage : starImportPackages) {
                         if (scanner.getClasses().get(starImportPackage + checkingClass) != null) {
-                            dependencies.add(starImportPackage + checkingClass);
+                            dependencies.put(starImportPackage + checkingClass, starImportPackage + checkingClass);
                         }
                     }
 
@@ -146,8 +144,8 @@ public class ScannerTask implements Runnable {
         }
 
         //Adding the dependencies to the class Json
-        JsonArray dependencyList = parser.parse(gson.toJson(dependencies)).getAsJsonArray();
-        classJson.add("dependencies", dependencyList);
+        String dependencyList = gson.toJson(dependencies);
+        classJson.addProperty("dependencies", gson.toJson(dependencies));
         log.debug("[" + (no + 1) + "/" + scanner.getClasses().values().size() + "] " + classPackageName + className + " - " + dependencyList);
 
     }

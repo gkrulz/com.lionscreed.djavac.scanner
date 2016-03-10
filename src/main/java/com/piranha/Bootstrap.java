@@ -5,6 +5,7 @@ import com.piranha.comm.CommunicationPipe;
 import com.piranha.dist.Distributor;
 import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
+import com.piranha.scan.ScannerX;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -13,6 +14,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Padmaka on 8/25/2015.
@@ -21,7 +23,7 @@ public class Bootstrap {
     private static final Logger log = Logger.getLogger(Bootstrap.class);
 
     public static void main(String[] args) {
-        ArrayList<JsonObject> classes;
+        ConcurrentHashMap<String, JsonObject> classes;
         ArrayList<JsonObject> detailedClassList;
 
         // Listening for other nodes to connect
@@ -42,7 +44,13 @@ public class Bootstrap {
         }
         //----------------------------------------------------------------------
 
-        Scanner scanner = new Scanner();
+        ScannerX scanner = null;
+        try {
+            scanner = new ScannerX();
+        } catch (IOException e) {
+            log.error("Unable to initialize scannerX");
+        }
+
         Collection fileCollection = scanner.readFiles();
         ArrayList<File> files = new ArrayList<File>();
 
@@ -58,7 +66,7 @@ public class Bootstrap {
         }
 
         classes = scanner.findDependencies();
-        detailedClassList = scanner.getDetailedClassList();
+//        detailedClassList = scanner.getDetailedClassList();
 
         classes = scanner.removeUnnecessaryImportStatements();
 
