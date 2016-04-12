@@ -3,11 +3,16 @@ package com.piranha.dist;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import org.apache.log4j.Logger;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.alg.cycle.SzwarcfiterLauerSimpleCycles;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -43,7 +48,7 @@ public class Scheduler {
 
                         if (compiledClasses.contains(dependency.getAsString())) {
                             isDependencyFree = true;
-                        }else {
+                        } else {
                             isDependencyFree = false;
                         }
 
@@ -78,11 +83,38 @@ public class Scheduler {
         return schedule;
     }
 
+    public void findGraphDeadlock(ConcurrentHashMap<String, JsonObject> classes) {
+        Gson gson = new Gson();
+        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {
+        }.getType();
+
+        DirectedGraph<String, DefaultEdge> dependancyGraph =
+                new DefaultDirectedGraph<>(DefaultEdge.class);
+
+        for (String key : classes.keySet()) {
+            dependancyGraph.addVertex(key);
+        }
+
+        for (String key : classes.keySet()) {
+            ConcurrentHashMap<String, String> dependencies = gson.fromJson(classes.get(key).get("dependencies").getAsString(), mapType);
+
+            for (String dependancy : dependencies.values()) {
+                dependancyGraph.addEdge(key,dependancy);
+            }
+        }
+
+        SzwarcfiterLauerSimpleCycles<String, DefaultEdge> loopDetector = new SzwarcfiterLauerSimpleCycles<>(dependancyGraph);
+        List<List<String>> loops = loopDetector.findSimpleCycles();
+        
+    }
+
     public ArrayList<ArrayList<JsonObject>> makeScheduleTemp(ConcurrentHashMap<String, JsonObject> classes) {
         ArrayList<ArrayList<JsonObject>> schedule = new ArrayList<>();
         HashMap<String, String> compiledClasses = new HashMap<>();
-        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
-        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<String>>() {
+        }.getType();
+        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {
+        }.getType();
         Gson gson = new Gson();
 
         classes = this.removeDependencyDeadlocks(classes);
@@ -134,12 +166,14 @@ public class Scheduler {
 
     public ConcurrentHashMap<String, JsonObject> removeDependencyDeadlocks(ConcurrentHashMap<String, JsonObject> classes) {
 
-        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
-        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {}.getType();
+        Type listType = new TypeToken<ArrayList<String>>() {
+        }.getType();
+        Type mapType = new TypeToken<ConcurrentHashMap<String, String>>() {
+        }.getType();
         JsonParser parser = new JsonParser();
         Gson gson = new Gson();
 
-        for (JsonObject classJson : classes.values()){
+        for (JsonObject classJson : classes.values()) {
             ConcurrentHashMap<String, String> dependencies = gson.fromJson(classJson.get("dependencies").getAsString(), mapType);
             String className = classJson.get("absoluteClassName").getAsString();
 
@@ -176,7 +210,7 @@ public class Scheduler {
                         break;
                     }
 
-                } else if (classes.get(dependency) == null){
+                } else if (classes.get(dependency) == null) {
                     log.debug("dependency not in classes - " + dependency + " for - " + className);
                 }
             }
