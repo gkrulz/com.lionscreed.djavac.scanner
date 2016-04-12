@@ -52,6 +52,9 @@ public class CompiledFileListener extends Thread {
     }
 
     public void shutdown(){
+        if(executorService!= null){
+            executorService.shutdown();
+        }
         isRunning = new AtomicBoolean(false);
     }
 
