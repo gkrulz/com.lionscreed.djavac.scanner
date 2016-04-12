@@ -85,6 +85,7 @@ public class CompiledFileListener extends Thread {
             JsonParser parser = new JsonParser();
 
             try {
+                Thread.sleep(100);
                 JsonObject responseJson = parser.parse(comm.readFromSocket(socket)).getAsJsonObject();
 
                 String fileName = responseJson.get("className").getAsString();
@@ -106,6 +107,8 @@ public class CompiledFileListener extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
