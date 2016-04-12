@@ -7,6 +7,7 @@ import com.piranha.util.Communication;
 import com.piranha.util.Constants;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -23,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by root on 4/13/16.
  */
 public class CompiledFileListener extends Thread {
+
+    private static final Logger log = Logger.getLogger(CompiledFileListener.class);
 
     private int threadPoolSize;
     private int port;
@@ -41,6 +44,7 @@ public class CompiledFileListener extends Thread {
             ServerSocket serverSocket = new ServerSocket(port);
             while (isRunning.get()) {
                 Socket client = serverSocket.accept();
+                log.debug("Accepted Compiled file Receiving from"+client.getRemoteSocketAddress());
                 CompiledFileAcceptor listener = new CompiledFileAcceptor(client);
                 executorService.submit(listener);
             }
@@ -59,6 +63,8 @@ public class CompiledFileListener extends Thread {
     }
 
     private static class CompiledFileAcceptor implements Runnable {
+
+        private static final Logger log = Logger.getLogger(CompiledFileAcceptor.class);
 
         private Socket socket;
         private Properties properties;
@@ -96,6 +102,7 @@ public class CompiledFileListener extends Thread {
                 IOUtils.copy(bis, fileOutputStream);
                 fileOutputStream.flush();
                 fileOutputStream.close();
+                log.debug("Written Compiled file -"+responseJson.get("className").getAsString());
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
