@@ -2,6 +2,7 @@ package com.piranha;
 
 import com.google.gson.JsonObject;
 import com.piranha.comm.CommunicationPipe;
+import com.piranha.dist.CompiledFileListener;
 import com.piranha.dist.Distributor;
 import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
@@ -48,7 +49,8 @@ public class Bootstrap {
         //--------------------------Termination Listener------------------------
 
         int threadPoolSize = 4;
-        ExecutorService fileListenerService = Executors.newFixedThreadPool(threadPoolSize);
+        CompiledFileListener listener = new CompiledFileListener(threadPoolSize,10000);
+        listener.start();
 
 
 
