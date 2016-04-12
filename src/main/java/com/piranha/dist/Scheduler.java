@@ -105,7 +105,7 @@ public class Scheduler {
 
         SzwarcfiterLauerSimpleCycles<String, DefaultEdge> loopDetector = new SzwarcfiterLauerSimpleCycles<>(dependancyGraph);
         List<List<String>> loops = loopDetector.findSimpleCycles();
-        
+
     }
 
     public ArrayList<ArrayList<JsonObject>> makeScheduleTemp(ConcurrentHashMap<String, JsonObject> classes) {

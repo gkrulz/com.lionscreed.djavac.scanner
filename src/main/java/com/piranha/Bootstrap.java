@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Padmaka on 8/25/2015.
@@ -42,8 +45,14 @@ public class Bootstrap {
                 log.error("Error", e);
             }
         }
-        //----------------------------------------------------------------------
+        //--------------------------Termination Listener------------------------
 
+        int threadPoolSize = 4;
+        ExecutorService fileListenerService = Executors.newFixedThreadPool(threadPoolSize);
+
+
+
+        //----------------------------------------------------------------------
         ScannerX scanner = null;
         try {
             scanner = new ScannerX();

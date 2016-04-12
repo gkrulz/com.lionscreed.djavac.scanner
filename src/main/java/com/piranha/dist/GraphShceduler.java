@@ -40,7 +40,7 @@ public class GraphShceduler {
         testGraph.addEdge("N3","N1");
 
         testGraph.addEdge("N5","N3");
-        testGraph.addEdge("N3","N4");
+        testGraph.addEdge("N3","N3");
 
         //testGraph.addEdge(obj1,obj3);
 
