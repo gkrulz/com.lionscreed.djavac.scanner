@@ -40,21 +40,14 @@ public class CommunicationPipe extends Thread{
         while (true) {
             try {
                 Socket socket = serverSocket.accept();
-                DataInputStream inputStream = new DataInputStream(socket.getInputStream());
 
                 InetSocketAddress ipAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
                 InetAddress inetAddress = ipAddress.getAddress();
 
-                log.debug(inetAddress.getHostAddress());
-
-                ServerSocket nodeCommLine = new ServerSocket(0);
-                JsonObject portInfo = new JsonObject();
-
-                portInfo.addProperty("portNo", nodeCommLine.getLocalPort());
-                comm.writeToSocket(socket, portInfo);
                 nodes.add(inetAddress.getHostAddress());
-                log.debug("Node at " + nodeCommLine.getLocalPort() + " added");
+                log.debug("Node at " + inetAddress.getHostAddress() + " added");
 
+                socket.close();
 
 
             } catch (IOException e) {
