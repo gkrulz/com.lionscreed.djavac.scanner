@@ -54,8 +54,6 @@ public class LocalCompiler {
 
         classes = scanner.removeUnnecessaryImportStatements();
 
-
-
 //        log.debug(gson.toJson(classes));
 
         long endTime = System.nanoTime();
@@ -69,6 +67,23 @@ public class LocalCompiler {
 //        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
 
         ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeScheduleTemp(classes);
+
+        int count = 0;
+        for (ArrayList<JsonObject> round : schedule){
+            for (JsonObject classJson : round){
+                if (classJson.get("toBeCompiledWith") != null) {
+                    JsonArray toBeCompiledWith = classJson.get("toBeCompiledWith").getAsJsonArray();
+
+                    count = count + toBeCompiledWith.size() + 1;
+                } else {
+                    count = count + 1;
+                }
+            }
+        }
+
+        log.debug(count);
+
+
 //
 //        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
 //

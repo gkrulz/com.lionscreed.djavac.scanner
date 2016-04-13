@@ -36,7 +36,7 @@ public class Bootstrap {
 
         communicationPipe.start();
         while (true) {
-            if (communicationPipe.getNodes().size() > 1) {
+            if (communicationPipe.getNodes().size() > 0) {
                 break;
             }
 
@@ -82,7 +82,7 @@ public class Bootstrap {
         classes = scanner.removeUnnecessaryImportStatements();
 
         Scheduler scheduler = new Scheduler();
-        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeSchedule(classes);
+        ArrayList<ArrayList<JsonObject>> schedule = scheduler.makeScheduleTemp(classes);
 
         ArrayList<ArrayList<List<JsonObject>>> distributionPlan = new ArrayList<>();
 

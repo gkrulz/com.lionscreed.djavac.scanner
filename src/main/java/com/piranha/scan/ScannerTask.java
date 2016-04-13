@@ -110,6 +110,29 @@ public class ScannerTask implements Runnable {
                 if (scanner.getDirectory().find(checkingClass) != null) {
                     String dependencyClassName = scanner.getDirectory().find(checkingClass).get("absoluteClassName").getAsString();
                     dependencies.put(dependencyClassName, dependencyClassName);
+                } else if (importStatements.size() > 0){
+                    String[] parts = checkingClass.split("\\.");
+
+                    for (String part : parts) {
+                        //Check whether the potential dependency is mentioned in import statements
+                        for (String importPackage : importPackages) {
+                            if (importStatementsMap.get(importPackage + part) != null &&
+                                    scanner.getClasses().get(importPackage + part) != null) {
+
+                                dependencies.put(importPackage + part, importPackage + part);
+                            }
+                        }
+                    }
+
+                } else {
+
+                    //Checking whether the potential dependency is in * import packages
+                    for (String starImportPackage : starImportPackages) {
+                        if (scanner.getClasses().get(starImportPackage + checkingClass) != null) {
+                            dependencies.put(starImportPackage + checkingClass, starImportPackage + checkingClass);
+                        }
+                    }
+
                 }
 
 

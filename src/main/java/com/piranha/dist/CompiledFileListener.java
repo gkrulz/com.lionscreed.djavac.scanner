@@ -78,6 +78,7 @@ public class CompiledFileListener extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            targetFolder = properties.getProperty("TARGET_FOLDER");
         }
 
         public void run() {
