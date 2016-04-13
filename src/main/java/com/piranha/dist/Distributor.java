@@ -4,7 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.piranha.comm.CommunicationPipe;
+import com.piranha.comm.HttpUtils;
 import com.piranha.util.Communication;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -97,15 +100,21 @@ public class Distributor {
 
                 String ipAddress = this.communicationPipe.getNodes().get(i);
                 log.debug(ipAddress);
-                Socket socket = new Socket(ipAddress, 9006);
+                //Socket socket = new Socket(ipAddress, 9006);
+                HttpPost post = new HttpPost();
+
 
                 JsonObject compilationWorkloadJson = new JsonObject();
                 compilationWorkloadJson.addProperty("op", "COMPILATION");
                 compilationWorkloadJson.addProperty("classes", gson.toJson(round.get(i)));
                 compilationWorkloadJson.addProperty("dependencyMap", gson.toJson(dependencyMap));
 
-                this.comm.writeToSocket(socket, compilationWorkloadJson);
-                socket.close();
+                post.setEntity(new StringEntity(compilationWorkloadJson.toString()));
+
+                HttpUtils.doRequest(post);
+
+                //this.comm.writeToSocket(socket, compilationWorkloadJson);
+                //socket.close();
 
                 for (JsonObject classJson : round.get(i)) {
                     if (ipAddress.equals("127.0.0.1")) {

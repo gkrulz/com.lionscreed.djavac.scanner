@@ -7,6 +7,7 @@ import com.piranha.dist.Distributor;
 import com.piranha.dist.Scheduler;
 import com.piranha.scan.Scanner;
 import com.piranha.scan.ScannerX;
+import com.piranha.util.Utils;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -27,6 +28,9 @@ public class Bootstrap {
     private static final Logger log = Logger.getLogger(Bootstrap.class);
 
     public static void main(String[] args) {
+
+
+
         ConcurrentHashMap<String, JsonObject> classes;
         ArrayList<JsonObject> detailedClassList;
 
