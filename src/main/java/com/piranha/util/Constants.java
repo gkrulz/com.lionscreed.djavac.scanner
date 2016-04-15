@@ -23,15 +23,8 @@ public class Constants {
             pathSeparator = "\\";
         }
 
-        Properties properties = new Properties();
-        try {
-            properties.load(Constants.class.getClassLoader().getResourceAsStream("config.properties"));
-        } catch (IOException e) {
-            log.error("Unable to load property file 'config.properties'");
-        }
-
         PATH_SEPARATOR = pathSeparator;
-        SOURCE_PATH = properties.getProperty("SOURCE_PATH");
-        DESTINATION_PATH = properties.getProperty("DESTINATION_PATH");
+        SOURCE_PATH = PiranhaConfig.getProperty("SOURCE_PATH");
+        DESTINATION_PATH = PiranhaConfig.getProperty("DESTINATION_PATH");
     }
 }

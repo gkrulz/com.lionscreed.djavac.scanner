@@ -12,9 +12,9 @@ import java.net.Socket;
  */
 public class Communication {
 
-    public String readFromSocket(Socket socket) throws IOException, ClassNotFoundException {
+    public String[] readFromSocket(Socket socket) throws IOException, ClassNotFoundException {
         ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-        return (String) in.readObject();
+        return (String[]) in.readObject();
     }
 
     public void writeToSocket(Socket socket, JsonElement data) throws IOException {

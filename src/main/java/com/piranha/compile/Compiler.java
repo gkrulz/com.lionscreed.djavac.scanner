@@ -1,5 +1,6 @@
 package com.piranha.compile;
 
+import com.piranha.util.PiranhaConfig;
 import org.apache.log4j.Logger;
 
 import javax.tools.JavaCompiler;
@@ -20,11 +21,9 @@ import java.util.Properties;
  */
 public class Compiler {
     private static final Logger log = Logger.getLogger(Compiler.class);
-    Properties properties;
 
     public Compiler (String classPath) throws IOException {
-        properties = new Properties();
-        properties.load(Compiler.class.getClassLoader().getResourceAsStream("config.properties"));
+
     }
 
     public void compile(String className, String classString) throws Exception {
@@ -42,14 +41,14 @@ public class Compiler {
 
         List<String> options = new ArrayList<>();
         options.add("-d");
-        options.add(properties.getProperty("DESTINATION_PATH"));
+        options.add(PiranhaConfig.getProperty("DESTINATION_PATH"));
         options.add( "-classpath");
         URLClassLoader urlClassLoader = (URLClassLoader)Thread.currentThread().getContextClassLoader();
         StringBuilder sb = new StringBuilder();
         for (URL url : urlClassLoader.getURLs()) {
             sb.append(url.getFile()).append(File.pathSeparator);
         }
-        sb.append(properties.getProperty("CLASSPATH"));
+        sb.append(PiranhaConfig.getProperty("CLASSPATH"));
         options.add(sb.toString());
 
         StringWriter output = new StringWriter();

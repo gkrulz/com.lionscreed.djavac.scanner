@@ -1,6 +1,7 @@
 package com.piranha.dist;
 
 import com.google.gson.*;
+import com.google.gson.internal.Streams;
 import com.google.gson.reflect.TypeToken;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -27,61 +28,61 @@ public class Scheduler {
      * @param classes list of json objects containing all classes
      * @return the compilation schedule
      */
-    public ArrayList<ArrayList<JsonObject>> makeSchedule(ConcurrentHashMap<String, JsonObject> classes) {
-        ArrayList<ArrayList<JsonObject>> schedule = new ArrayList<>();
-        ArrayList<String> compiledClasses = new ArrayList<>();
-
-        for (int i = 0; i < classes.size(); i++) {
-            log.debug("Compilation Round: " + (i + 1));
-            ArrayList<JsonObject> dependencyFreeClasses = new ArrayList<>();
-
-            for (JsonObject classJson : classes.values()) {
-                boolean isDependencyFree = false;
-
-                if (classJson.get("dependencies").getAsJsonArray().size() == 0 &&
-                        !compiledClasses.contains(classJson.get("absoluteClassName").getAsString())) {
-
-                    isDependencyFree = true;
-
-                } else if (schedule.size() > 0) {
-                    for (JsonElement dependency : classJson.get("dependencies").getAsJsonArray()) {
-
-                        if (compiledClasses.contains(dependency.getAsString())) {
-                            isDependencyFree = true;
-                        } else {
-                            isDependencyFree = false;
-                        }
-
-
-                        if (!isDependencyFree) {
-                            break;
-                        }
-                    }
-
-                    if (compiledClasses.contains(classJson.get("absoluteClassName").getAsString())) {
-                        isDependencyFree = false;
-                    }
-                }
-
-                if (isDependencyFree) {
-                    dependencyFreeClasses.add(classJson);
-                    log.debug(classJson.get("absoluteClassName").getAsString());
-                }
-            }
-
-            if (!dependencyFreeClasses.isEmpty()) {
-                schedule.add(dependencyFreeClasses);
-            } else {
-                break;
-            }
-
-            for (JsonObject classObj : dependencyFreeClasses) {
-                compiledClasses.add(classObj.get("absoluteClassName").getAsString());
-            }
-        }
-
-        return schedule;
-    }
+//    public ArrayList<ArrayList<JsonObject>> makeSchedule(ConcurrentHashMap<String, JsonObject> classes) {
+//        ArrayList<ArrayList<JsonObject>> schedule = new ArrayList<>();
+//        ArrayList<String> compiledClasses = new ArrayList<>();
+//
+//        for (int i = 0; i < classes.size(); i++) {
+//            log.debug("Compilation Round: " + (i + 1));
+//            ArrayList<JsonObject> dependencyFreeClasses = new ArrayList<>();
+//
+//            for (JsonObject classJson : classes.values()) {
+//                boolean isDependencyFree = false;
+//
+//                if (classJson.get("dependencies").getAsJsonArray().size() == 0 &&
+//                        !compiledClasses.contains(classJson.get("absoluteClassName").getAsString())) {
+//
+//                    isDependencyFree = true;
+//
+//                } else if (schedule.size() > 0) {
+//                    for (JsonElement dependency : classJson.get("dependencies").getAsJsonArray()) {
+//
+//                        if (compiledClasses.contains(dependency.getAsString())) {
+//                            isDependencyFree = true;
+//                        } else {
+//                            isDependencyFree = false;
+//                        }
+//
+//
+//                        if (!isDependencyFree) {
+//                            break;
+//                        }
+//                    }
+//
+//                    if (compiledClasses.contains(classJson.get("absoluteClassName").getAsString())) {
+//                        isDependencyFree = false;
+//                    }
+//                }
+//
+//                if (isDependencyFree) {
+//                    dependencyFreeClasses.add(classJson);
+//                    log.debug(classJson.get("absoluteClassName").getAsString());
+//                }
+//            }
+//
+//            if (!dependencyFreeClasses.isEmpty()) {
+//                schedule.add(dependencyFreeClasses);
+//            } else {
+//                break;
+//            }
+//
+//            for (JsonObject classObj : dependencyFreeClasses) {
+//                compiledClasses.add(classObj.get("absoluteClassName").getAsString());
+//            }
+//        }
+//
+//        return schedule;
+//    }
 
     public List<List<String>> findGraphDeadlock(ConcurrentHashMap<String, JsonObject> classes) {
         Gson gson = new Gson();
@@ -121,7 +122,15 @@ public class Scheduler {
         //------------------------------------------------------------------------------------------------------
         log.debug(gson.toJson(deadlocks));
 
+        HashMap<String, String> deadlockMap = new HashMap<>();
+
         HashSet<List<String>> newLists = new HashSet<>();
+
+        for (List<String> set : deadlocks){
+            for (String element : set){
+                deadlockMap.put(element, element);
+            }
+        }
 
         for(List<String> x : deadlocks){
             List<String> currentList = x;
@@ -184,7 +193,7 @@ public class Scheduler {
                 boolean isDependencyFree = true;
 
                 for (String dependency : dependencies.values()) {
-                    if (compiledClasses.get(dependency) == null) {
+                    if (compiledClasses.get(dependency) == null && deadlockMap.get(dependency) == null) {
                         isDependencyFree = false;
                         break;
                     }
@@ -266,7 +275,7 @@ public class Scheduler {
 
                 for (String checkingName : deadlockList){
                     if (dependencies.get(checkingName) != null){
-                        dependencies.remove(checkingName);
+//                        dependencies.remove(checkingName);
                         dependencies.put(dependencyName, dependencyName);
                         classJson.addProperty("dependencies", gson.toJson(dependencies));
                     }

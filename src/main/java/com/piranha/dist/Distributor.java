@@ -1,8 +1,6 @@
 package com.piranha.dist;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.piranha.comm.CommunicationPipe;
 import com.piranha.comm.HttpUtils;
 import com.piranha.util.Communication;
@@ -44,7 +42,7 @@ public class Distributor {
             if ((round.size() % nodes.size()) == 0){
                 noOfIterations = noOfClassesPerNode * nodes.size();
             } else if ((round.size() % nodes.size()) != 0 && round.size() < nodes.size()) {
-                noOfIterations = noOfClassesPerNode;
+                noOfIterations = round.size();
             } else if ((round.size() % nodes.size()) != 0 && round.size() > nodes.size()) {
                 noOfIterations = (noOfClassesPerNode * nodes.size()) + noOfClassesPerNode;
             }
@@ -65,7 +63,7 @@ public class Distributor {
             }
         }
 
-        log.debug(distributionPlan);
+//        log.debug(distributionPlan);
         return distributionPlan;
     }
 
@@ -80,6 +78,48 @@ public class Distributor {
         JsonParser parser = new JsonParser();
         HashMap<String, String> dependencyMap = new HashMap<>();
         int x = 0;
+
+        for (int j = 0; j < distributionPlan.size(); j++){
+            int noOfIterations = 0;
+            ArrayList<List<JsonObject>> round = distributionPlan.get(j);
+
+            if (round.size() > noOfNodes) {
+                noOfIterations = noOfNodes;
+            } else if (round.size() < noOfNodes) {
+                noOfIterations = round.size();
+            } else {
+                noOfIterations = noOfNodes;
+            }
+
+            for (int i = 0; i < noOfIterations; i++) {
+                List<JsonObject> currentRound = new ArrayList<>(round.get(i));
+
+                if (i == (noOfNodes - 1) && round.size() > noOfNodes) {
+                    currentRound.addAll(round.get(i + 1));
+                }
+
+                String ipAddress = this.communicationPipe.getNodes().get(i);
+
+                for (JsonObject classJson : currentRound) {
+                    if (ipAddress.equals("127.0.0.1")) {
+                        InetAddress networkIpAddress = InetAddress.getLocalHost();
+                        ipAddress = networkIpAddress.getHostAddress();
+                    }
+
+                    if (classJson.get("toBeCompiledWith") != null) {
+                        JsonArray toBeCompiledWith = classJson.get("toBeCompiledWith").getAsJsonArray();
+
+                        for (JsonElement element : toBeCompiledWith){
+                            JsonObject classObj = element.getAsJsonObject();
+                            String className = classObj.get("absoluteClassName").getAsString();
+
+                            dependencyMap.put(className, ipAddress);
+                        }
+                    }
+                    dependencyMap.put(classJson.get("absoluteClassName").getAsString(), ipAddress);
+                }
+            }
+        }
 
         for (ArrayList<List<JsonObject>> round : distributionPlan) {
             int noOfIterations = 0;
@@ -101,8 +141,8 @@ public class Distributor {
                 String ipAddress = this.communicationPipe.getNodes().get(i);
                 log.debug(ipAddress);
                 //Socket socket = new Socket(ipAddress, 9006);
-                HttpPost post = new HttpPost();
-
+                HttpPost post = new HttpPost("http://"+ipAddress+":9090"+"/round");
+                log.debug("Creating POST");
 
                 JsonObject compilationWorkloadJson = new JsonObject();
                 compilationWorkloadJson.addProperty("op", "COMPILATION");
@@ -116,30 +156,50 @@ public class Distributor {
                 //this.comm.writeToSocket(socket, compilationWorkloadJson);
                 //socket.close();
 
-                for (JsonObject classJson : round.get(i)) {
-                    if (ipAddress.equals("127.0.0.1")) {
-                        InetAddress networkIpAddress = InetAddress.getLocalHost();
-                        ipAddress = networkIpAddress.getHostAddress();
-                    }
+//                for (JsonObject classJson : round.get(i)) {
+//                    if (ipAddress.equals("127.0.0.1")) {
+//                        InetAddress networkIpAddress = InetAddress.getLocalHost();
+//                        ipAddress = networkIpAddress.getHostAddress();
+//                    }
+//
+//                    if (classJson.get("toBeCompiledWith") != null) {
+//                        JsonArray toBeCompiledWith = classJson.get("toBeCompiledWith").getAsJsonArray();
+//
+//                        for (JsonElement element : toBeCompiledWith){
+//                            JsonObject classObj = element.getAsJsonObject();
+//                            String className = classObj.get("absoluteClassName").getAsString();
+//
+//                            dependencyMap.put(className, ipAddress);
+//                        }
+//                    }
+//                    dependencyMap.put(classJson.get("absoluteClassName").getAsString(), ipAddress);
+//                }
 
-                    dependencyMap.put(classJson.get("absoluteClassName").getAsString(), ipAddress);
-                }
-
-                log.debug(round.get(i));
+                log.debug(gson.toJson(dependencyMap));
+//                log.debug(round.get(i));
             }
             x++;
         }
 
-        //Send the compilation termination message
-        JsonObject terminationMessage = new JsonObject();
 
-        terminationMessage.addProperty("op", "TERMINATE");
-        terminationMessage.addProperty("classes", gson.toJson(dependencyMap));
 
-        for (String ipAddress : this.communicationPipe.getNodes()) {
-            Socket socket = new Socket(ipAddress, 9006);
-            this.comm.writeToSocket(socket, terminationMessage);
-            log.debug(gson.toJson(terminationMessage));
+        for(String ipAddress : this.communicationPipe.getNodes()){
+            HttpPost terminationPost = new HttpPost("http://"+ipAddress+":9090"+"/terminate");
+            terminationPost.setEntity(new StringEntity("Terminate the Node"));
+
+            HttpUtils.doRequest(terminationPost);
+
         }
+        //Send the compilation termination message
+//        JsonObject terminationMessage = new JsonObject();
+//
+//        terminationMessage.addProperty("op", "TERMINATE");
+//        terminationMessage.addProperty("classes", gson.toJson(dependencyMap));
+//
+//        for (String ipAddress : this.communicationPipe.getNodes()) {
+//            Socket socket = new Socket(ipAddress, 9006);
+//            this.comm.writeToSocket(socket, terminationMessage);
+//            log.debug(gson.toJson(terminationMessage));
+//        }
     }
 }
