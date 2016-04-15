@@ -1,6 +1,7 @@
 package com.piranha.scan;
 
 import com.google.gson.Gson;
+import com.piranha.util.PiranhaConfig;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -20,14 +21,14 @@ public class DependencyResolver {
     private String[] operators;
 
     public DependencyResolver() throws IOException {
-        File file = new File("src/main/resources/keywords.csv");
+        File file = new File(PiranhaConfig.getProperty("KEYWORDS_FILE_PATH"));
         FileInputStream in = new FileInputStream(file);
 
         String fileString = IOUtils.toString(in);
         fileString = fileString.replaceAll("\\s+", "");
         keywords = fileString.split(",");
 
-        File file2 = new File("src/main/resources/operators.csv");
+        File file2 = new File(PiranhaConfig.getProperty("OPERATORs_FILE_PATH"));
         FileInputStream in2 = new FileInputStream(file2);
 
         String fileString2 = IOUtils.toString(in2);
