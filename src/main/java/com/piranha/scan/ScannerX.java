@@ -307,7 +307,7 @@ public class ScannerX {
                     classJson.addProperty("classString", classString.trim());
                     classJson.add("importStatements", importStatements);
                     String packageName = classJson.get("filePath").getAsString().replace(rootPath, "");
-                    packageName = packageName.replace("/", ".");
+                    packageName = packageName.replace(Constants.PATH_SEPARATOR, ".");
                     packageName = packageName.replace(classJson.get("file").getAsString(), "").trim();
                     classJson.addProperty("package", packageName);
                     classJson.addProperty("absoluteClassName", packageName + className);
@@ -473,7 +473,7 @@ public class ScannerX {
     public ConcurrentHashMap<String, JsonObject> findDependencies() {
 
 
-        ExecutorService executorService = Executors.newFixedThreadPool(8);
+        ExecutorService executorService = Executors.newFixedThreadPool(Integer.parseInt(PiranhaConfig.getProperty("NO_OF_THREADS_FOR_SCANNER")));
 
         int x = 0;
         for (JsonObject classJson : classes.values()) {
