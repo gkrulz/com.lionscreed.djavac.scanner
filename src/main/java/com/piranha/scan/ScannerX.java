@@ -4,6 +4,7 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.piranha.util.Constants;
 import com.piranha.util.Directory;
+import com.piranha.util.PiranhaConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -42,14 +43,14 @@ public class ScannerX {
         directory = new Directory();
         classes = new ConcurrentHashMap<>();
 
-        File keywordsFile = new File("src/main/resources/keywords.csv");
+        File keywordsFile = new File(PiranhaConfig.getProperty("KEYWORDS_FILE_PATH"));
         FileInputStream keywordsIn = new FileInputStream(keywordsFile);
 
         String keywordsFileString = IOUtils.toString(keywordsIn);
         keywordsFileString = keywordsFileString.replaceAll("\\s+", "");
         keywords = keywordsFileString.split(",");
 
-        File operatorsFile = new File("src/main/resources/operators.csv");
+        File operatorsFile = new File(PiranhaConfig.getProperty("OPERATORs_FILE_PATH"));
         FileInputStream operatorsIn = new FileInputStream(operatorsFile);
 
         String operatorsFileString = IOUtils.toString(operatorsIn);
